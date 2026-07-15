@@ -36,7 +36,7 @@
       "name": "Get a document",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "R9seNRT9y14Iuwqg",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -108,7 +108,7 @@ STRICT PROCESSING RULES:
       "name": "Update a document",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "R9seNRT9y14Iuwqg",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -152,14 +152,14 @@ IMPORTANT FORMATTING: Output is for Telegram. NEVER use HTML tags like <ul>, <ol
       "webhookId": "3b4a156d-6f83-4f79-9aa3-cea387458890",
       "credentials": {
         "telegramApi": {
-          "id": "RpwsO3l8PN89hSaa",
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
           "name": "Telegram account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Create a simple text file with a header\nconst text = \"-\";\n\n// Convert to binary data for Google Drive\nreturn [\n  {\n    json: {\n      success: true\n    },\n    binary: {\n      data: {\n        data: Buffer.from(text).toString('base64'),\n        mimeType: 'application/vnd.google-apps.document', // Důležité: formát Google Doc\n        fileName: 'clean_diary'\n      }\n    }\n  }\n];"
+        "jsCode": "// Create a simple text file with a header\nconst text = \"-\";\n\n// Convert to binary data for Google Drive\nreturn [\n  {\n    json: {\n      success: true\n    },\n    binary: {\n      data: {\n        data: Buffer.from(text).toString('base64'),\n        mimeType: 'application/vnd.google-apps.document', // Important: Google Doc format\n        fileName: 'clean_diary'\n      }\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -192,7 +192,7 @@ IMPORTANT FORMATTING: Output is for Telegram. NEVER use HTML tags like <ul>, <ol
       "name": "Update file",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "EI9KFE9coepaaK0W",
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
           "name": "Google Drive account"
         }
       }
@@ -234,7 +234,7 @@ IMPORTANT FORMATTING: Output is for Telegram. NEVER use HTML tags like <ul>, <ol
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
-          "id": "YOBYQ9rIqObenCgj",
+          "id": "YOUR_GOOGLE_GEMINI_CREDENTIAL_ID",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -275,7 +275,7 @@ IMPORTANT FORMATTING: Output is for Telegram. NEVER use HTML tags like <ul>, <ol
       "name": "Google Gemini Chat Model1",
       "credentials": {
         "googlePalmApi": {
-          "id": "YOBYQ9rIqObenCgj",
+          "id": "YOUR_GOOGLE_GEMINI_CREDENTIAL_ID",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -304,7 +304,7 @@ IMPORTANT FORMATTING: Output is for Telegram. NEVER use HTML tags like <ul>, <ol
       "retryOnFail": true,
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "R9seNRT9y14Iuwqg",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       },

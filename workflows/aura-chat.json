@@ -21,7 +21,7 @@
       "webhookId": "df4048c8-8423-4f2d-acc4-b55a8d14488d",
       "credentials": {
         "telegramApi": {
-          "id": "RpwsO3l8PN89hSaa",
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
           "name": "Telegram account"
         }
       }
@@ -49,7 +49,7 @@
       "name": "Update a document",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "R9seNRT9y14Iuwqg",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -75,7 +75,7 @@
       "retryOnFail": true,
       "credentials": {
         "telegramApi": {
-          "id": "RpwsO3l8PN89hSaa",
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
           "name": "Telegram account"
         }
       },
@@ -104,7 +104,7 @@
       "name": "Update a document1",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "R9seNRT9y14Iuwqg",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -133,7 +133,7 @@
       "name": "Analyze an image",
       "credentials": {
         "googlePalmApi": {
-          "id": "YOBYQ9rIqObenCgj",
+          "id": "YOUR_GOOGLE_GEMINI_CREDENTIAL_ID",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -199,7 +199,7 @@
       "name": "Get a document - live_diary",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "R9seNRT9y14Iuwqg",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -232,7 +232,7 @@
       "name": "Get a document Aura_user_profile",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "R9seNRT9y14Iuwqg",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -301,7 +301,7 @@
       "name": "Update row in sheet",
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "1kxoA9zaahuOg0k1",
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
           "name": "Google Sheets account"
         }
       }
@@ -436,7 +436,7 @@
       "name": "Transcribe a recording",
       "credentials": {
         "googlePalmApi": {
-          "id": "YOBYQ9rIqObenCgj",
+          "id": "YOUR_GOOGLE_GEMINI_CREDENTIAL_ID",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -507,7 +507,7 @@
       "name": "AI Agent",
       "credentials": {
         "googlePalmApi": {
-          "id": "YOBYQ9rIqObenCgj",
+          "id": "YOUR_GOOGLE_GEMINI_CREDENTIAL_ID",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -622,7 +622,7 @@
       "name": "Cache log",
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "1kxoA9zaahuOg0k1",
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
           "name": "Google Sheets account"
         }
       }
