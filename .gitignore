@@ -1,0 +1,13 @@
+# Development artifacts
+sanitize.py
+debug_find.py
+*.pyc
+__pycache__/
+
+# Environment
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db

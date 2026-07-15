@@ -1,0 +1,860 @@
+{
+  "name": "Aura",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        -16
+      ],
+      "id": "2d7b6125-a92a-4eba-8f99-8ac48c8f04e7",
+      "name": "Telegram Trigger",
+      "webhookId": "df4048c8-8423-4f2d-acc4-b55a8d14488d",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpwsO3l8PN89hSaa",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "YOUR_LIVE_DIARY_DOC_ID",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ \"\\n\\n[ME - \" + $now.toFormat('dd.MM.yyyy HH:mm') + \"]:\\n\" + $json.final_text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "876fe7b7-84df-4f95-9cc8-5ef596c4ad45",
+      "name": "Update a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "R9seNRT9y14Iuwqg",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('AI Agent').item.json.candidates[0].content.parts[0].text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1712,
+        0
+      ],
+      "id": "ec5ca41a-7904-48c5-829e-98b4b6358bed",
+      "name": "Send a text message1",
+      "webhookId": "7c784b24-9e4f-4349-a24a-e63be5e60f50",
+      "retryOnFail": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "RpwsO3l8PN89hSaa",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "YOUR_LIVE_DIARY_DOC_ID",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "=\nAURA \nAURA: {{ $('AI Agent').item.json.candidates[0].content.parts[0].text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        0
+      ],
+      "id": "cfb65b19-892b-4306-b269-8fad2ace9424",
+      "name": "Update a document1",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "R9seNRT9y14Iuwqg",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "You are my eyes. Describe in detail what you see in this image. If there is text, transcribe it. If it's a drawing, describe the style and content. If it's a screenshot of a conversation, transcribe the entire conversation you see.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        -320
+      ],
+      "id": "87822948-09b3-491d-bee2-02a7da4d16f6",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOBYQ9rIqObenCgj",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "21d3fd92-5aa3-4bc3-9df2-3773846eb4cb",
+              "name": "final_text",
+              "value": "={{ $('Telegram Trigger').item.json.message.caption }}\n[IMAGE DESCRIPTION: {{ $('Analyze an image').item.json.content.parts[0].text }}]",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        -320
+      ],
+      "id": "56500266-1b70-4021-95e6-320118fb00f3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3d0b4377-b08d-4e8e-967c-c5d3e3fd4c91",
+              "name": "final_text",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        336
+      ],
+      "id": "d8831270-eb95-49c5-b0c9-a8e1e5e9a299",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "YOUR_LIVE_DIARY_DOC_ID"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "id": "31d8fd9c-3afd-45a6-921c-63b2ee0bcd59",
+      "name": "Get a document - live_diary",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "R9seNRT9y14Iuwqg",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        688,
+        0
+      ],
+      "id": "b29ff540-ba32-4e7e-8e3d-fdb33b5b9800",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "YOUR_USER_PROFILE_DOC_ID"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        0
+      ],
+      "id": "ac5e0824-b4fa-4994-91df-eed4c8ac8019",
+      "name": "Get a document Aura_user_profile",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "R9seNRT9y14Iuwqg",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_ACTIVITY_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Aura - last active date",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_ACTIVITY_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_ACTIVITY_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Last active date": "={{ $now.toISO() }}",
+            "row_number": 2
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Last active date",
+              "displayName": "Last active date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2032,
+        0
+      ],
+      "id": "6e2e69f3-be44-4af5-93d3-45bfc53049e8",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1kxoA9zaahuOg0k1",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.photo ? $json.message.photo[0].file_id : undefined }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "fc289ba4-4fde-425f-a9fc-409404da4f23"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4139c112-1617-4b49-b19e-1969410d350c",
+                    "leftValue": "={{ $json.message.voice ? $json.message.voice.file_id : undefined }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        -32
+      ],
+      "id": "d1ef3f0a-5b4e-42d8-8c6c-37e2d9e09a6a",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "url": "https://api.telegram.org/botYOUR_BOT_TOKEN/getFile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "file_id",
+              "value": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -32,
+        -16
+      ],
+      "id": "6190c0ba-6d58-4d08-ab15-944bf78abdfe",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/file/botYOUR_BOT_TOKEN/{{ $json.result.file_path }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        128,
+        -96
+      ],
+      "id": "20edf87c-d0c2-4a63-abab-33f1493ef85a",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        -96
+      ],
+      "id": "4121ac5e-5fea-4e40-877b-fbf70881fdd2",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOBYQ9rIqObenCgj",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25c59dc0-f100-477d-b107-1d3f41b38ebf",
+              "name": "final_text",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        144
+      ],
+      "id": "55aa2307-50b0-4acf-9b6a-cb0bec9ae71c",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process all items\nfor (const item of items) {\n  // If binary data exists in 'data' variable\n  if (item.binary && item.binary.data) {\n    // Manually set MIME type to audio/ogg\n    item.binary.data.mimeType = 'audio/ogg';\n    // Also set file extension for safety\n    item.binary.data.fileExtension = 'oga';\n    item.binary.data.fileName = 'voice_message.oga';\n  }\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        -96
+      ],
+      "id": "a83f85a3-ea1a-46e5-ae81-cdfcdac58d39",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $('Merge').item.json.final_text.toLowerCase().startsWith('pro:') ? 'gemini-3.1-pro-preview' : 'gemini-3-flash-preview' }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  \"model\": $('Merge').item.json.final_text.toLowerCase().startsWith('pro:') ? \"models/gemini-3.1-pro-preview\" : \"models/gemini-3-flash-preview\",\n  \"system_instruction\": {\n    \"parts\": [\n      {\n        \"text\": `IDENTITY & ROLE\nYou are Aura. A wise guide, therapeutic support, and strategic partner for the user.\nYour goal: Support the user's authenticity and inner integrity. Help them grow into their best self — not through pressure, but through awareness of their own values and boundaries.\n\nCORE DIRECTIVE: Don't try to \"fix\" the user or push them into a role that isn't theirs. Your job is to shine a light on what's happening beneath the surface. Instead of commands, use curious questions. Growth is not a mask to wear — it's a state that emerges when the user stops fearing judgment.\n\nTHREE INTERNAL STATES:\n1. SHIELD (Empathy): When the user is down, tired, or under pressure. → Be soft, understanding, validate their emotions.\n2. SWORD (Challenge): When the user is making excuses, avoiding responsibility, or falling into old patterns. → Be firm, concise, and hold up a mirror.\n3. BOARD OF DIRECTORS (Work & Purpose): When discussing career, business, or life direction. → Be strategic, analytical, and forward-looking.\n\nIMPORTANT: These states are your internal compass only. NEVER announce which state you're in. Transition naturally.\n\nCOMMUNICATION RULES:\n- Language: Match the user's language naturally.\n- Tone: Warm, direct, intelligent. No therapy-speak or corporate buzzwords.\n- Length: Adapt to context. Be concise when overwhelmed, go deeper when exploring.\n- Questions over statements: Guide the user to their own insights rather than lecturing.\n- Remember details: Reference past conversations to show continuity and genuine care.\n- No toxic positivity: Don't dismiss real pain with \"look on the bright side.\"\n- No unsolicited advice: Explore before prescribing.\n\nCONTEXT DOCUMENTS:\nYou receive two context documents with each message:\n- Live Diary: The ongoing conversation history and journal entries.\n- User Profile: Persistent information about the user (preferences, goals, important relationships, patterns).\n\nUse these to personalize your responses and maintain continuity across sessions.\n\nTECHNICAL PROTOCOL (Telegram API Safety):\n- NO MARKDOWN: Never use asterisks (*text*), underscores (_), or other markdown characters. They break the Telegram API.\n- For bullet points, use only a plain dash \"-\".\n- Add blank lines between paragraphs for readability.\n\nACTION PLAN: Only suggest concrete steps when the user is seeking solutions or needs structure. If dealing with emotions, stay in exploration mode.\n\nTone: Accepting, LGBTQIA+ affirming, but honestly direct when the situation calls for it.\n\nGoal of interaction: Your goal is not to \"fix\" the user, but to help them understand themselves so they can make conscious decisions.\n\nEXAMPLE OF YOUR TONE:\n(BAD - Robotic): \"ACTIVATING SWORD MODE. 1. Analysis: Your messages are too long. 2. Recommendation: Stop.\"\n(GOOD - Aura): \"Hey, slow down. You're writing novels again and waiting for approval. That's not the behavior of someone who knows their worth. Shorten it, or don't send it at all. You're better than this.\"\n\n=== ABSOLUTE TEXT PURITY PROTOCOL ===\n(Telegram API cannot handle any formatting characters; otherwise the message will fail to send)\n\nSummary: Write in plain text only. Use only paragraphs and dashes for structure. Your message will be delivered via a Telegram bot.\n\nNOW RESPOND TO THE USER'S LATEST MESSAGE:\n\nHERE IS THE HISTORY FROM PREVIOUS SESSIONS:\n` + $('Get a document Aura_user_profile').item.json.content\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"Zde je aktuální master diary (denní zápis): \" + $('Get a document - live_diary').item.json.content + \"\\n\\nAktuální prompt je: \" + $('Merge').item.json.final_text.replace(/^pro:\\s*/i, '')\n        }\n      ]\n    }\n  ],\n  \"safetySettings\": [\n    {\n      \"category\": \"HARM_CATEGORY_HARASSMENT\",\n      \"threshold\": \"BLOCK_NONE\"\n    },\n    {\n      \"category\": \"HARM_CATEGORY_HATE_SPEECH\",\n      \"threshold\": \"BLOCK_NONE\"\n    },\n    {\n      \"category\": \"HARM_CATEGORY_SEXUALLY_EXPLICIT\",\n      \"threshold\": \"BLOCK_NONE\"\n    },\n    {\n      \"category\": \"HARM_CATEGORY_DANGEROUS_CONTENT\",\n      \"threshold\": \"BLOCK_NONE\"\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.7,\n    \"maxOutputTokens\": 8192\n  }\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "0f3be7f4-23a0-4bd2-8e22-1cb8c3f11e71",
+      "name": "AI Agent",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOBYQ9rIqObenCgj",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_CACHE_LOG_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Gemini_cache_log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_CACHE_LOG_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_CACHE_LOG_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            "Model": "={{ $('AI Agent').item.json.modelVersion }}",
+            "Total Tokens": "={{ $('AI Agent').item.json.usageMetadata.totalTokenCount }}",
+            "Cached tokens": "={{ $json.usageMetadata.cachedContentTokenCount ? $json.usageMetadata.cachedContentTokenCount : 0 }}",
+            "HIT / MISS": "={{ ($json.usageMetadata.cachedContentTokenCount || 0) > 0 ? \"HIT\" : \"MISS\" }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Model",
+              "displayName": "Model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Tokens",
+              "displayName": "Total Tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cached tokens",
+              "displayName": "Cached tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HIT / MISS",
+              "displayName": "HIT / MISS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Time delta",
+              "displayName": "Time delta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1504,
+        0
+      ],
+      "id": "4660c433-4c13-46b6-b673-d94a3bb591f8",
+      "name": "Cache log",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1kxoA9zaahuOg0k1",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document": {
+      "main": [
+        [
+          {
+            "node": "Get a document - live_diary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Update a document1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document - live_diary": {
+      "main": [
+        [
+          {
+            "node": "Get a document Aura_user_profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Update a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document Aura_user_profile": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document1": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Cache log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache log": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "97075743-0dbe-4fbd-b47b-6b92d799f2a0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "id": "N3ITW6gGLn8fNKnk",
+  "tags": []
+}

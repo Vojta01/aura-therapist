@@ -1,0 +1,363 @@
+{
+  "name": "Aura - proaktivní",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0d2758ea-807b-4572-8bbe-07f6d1ac59cb",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_ACTIVITY_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Aura - last active date",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_ACTIVITY_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_ACTIVITY_SHEET_ID/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange"
+            }
+          },
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8176fdf0-8169-4ecd-be4c-ea09d0c64d4c",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1kxoA9zaahuOg0k1",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get current time\nconst now = new Date();\n\n// Iterate through all loaded items\nfor (const item of items) {\n  const lastActiveString = item.json[\"Last active date\"];\n\n  // Error handling: If cell is empty (never been active)\n  if (!lastActiveString) {\n    item.json.differenceInDays = 999; // Set a fictional high number\n    item.json.shouldTrigger = true;   // Should trigger a message\n    continue;\n  }\n\n  // Convert sheet text to date\n  const lastActiveDate = new Date(lastActiveString);\n\n  // Calculate difference in milliseconds\n  const differenceInMs = now - lastActiveDate;\n\n  // Convert milliseconds to days (1000ms * 60s * 60min * 24h)\n  const differenceInDays = differenceInMs / (1000 * 60 * 60 * 24);\n\n  // Save results back to data for the next node\n  item.json.differenceInDays = parseFloat(differenceInDays.toFixed(2)); // Round to 2 decimal places\n  item.json.shouldTrigger = differenceInDays > 2; // TRUE if more than 2 days\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "cb832649-beac-4002-bdda-e8c69060716d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "98dd8289-6649-4758-8252-d94161045397",
+              "leftValue": "={{ $json.shouldTrigger }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "0c2f1054-186d-4dec-8359-40bad18722b0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "YOUR_LIVE_DIARY_DOC_ID"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        848,
+        -16
+      ],
+      "id": "b6c0fbef-d2f1-4382-aa3d-35b7b6d055d3",
+      "name": "Get a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "R9seNRT9y14Iuwqg",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.content }}",
+        "options": {
+          "systemMessage": "ROLE:
+You are an empathetic, personal coach and guide. Your client hasn't checked in for several days. Your task is not to "chase" them, but to gently offer space to return by following up on what was last important to them.
+
+TASK:
+1. Read the attached chat history.
+2. Identify one specific topic, emotion, or situation that was dominant or unresolved recently.
+3. Write one short, casual message (SMS/chat style) checking in on that topic.
+
+RULES FOR THE MESSAGE:
+- NO guilt-tripping ("You haven't written in a while", "Where are you?"). This triggers shame.
+- NO generic phrases ("How are you?", "What's new?"). This feels lazy.
+- BE SPECIFIC: Mention a detail from the history (e.g., a person's name, a specific stressor, a particular feeling).
+- TONE: Warm, caring, undemanding. Like a friend who remembered you.
+- LENGTH: 2-3 sentences maximum.
+- LANGUAGE: Match the user's language naturally.
+
+EXAMPLES:
+- BAD: "Hey, you haven't been here for 3 days. Want to talk?"
+- GOOD (work stress): "Hey, I was thinking about that tough project you mentioned. Has the atmosphere at work calmed down a bit?"
+- GOOD (relationships): "I've been thinking about what you said about that difficult conversation. Did you two find a moment of peace?"
+- GOOD (general stress): "Hope you've had at least a moment to breathe the last few days. How are you feeling today?""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1056,
+        -16
+      ],
+      "id": "957010c5-8be1-493a-a00d-ecaaee4d5171",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "YOUR_LIVE_DIARY_DOC_ID",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        -16
+      ],
+      "id": "d6234d4e-ac01-41f1-b61a-98f91de4950b",
+      "name": "Update a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "R9seNRT9y14Iuwqg",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {
+          "temperature": 0.7,
+          "safetySettings": {
+            "values": [
+              {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_NONE"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        176
+      ],
+      "id": "401a1f76-9b3f-49be-8794-56747beb5d56",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOBYQ9rIqObenCgj",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "={{ $('AI Agent').item.json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1488,
+        -16
+      ],
+      "id": "dbe5b2fb-f80c-48cb-8f44-a5bd3e88160d",
+      "name": "Send a text message",
+      "webhookId": "864ada68-68eb-4298-9804-266005d39efc",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpwsO3l8PN89hSaa",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Update a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "f14f6057-fe09-4954-a5f8-16065e67580f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "id": "r22Wex5NMLsxPxjZ",
+  "tags": []
+}
