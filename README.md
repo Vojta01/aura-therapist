@@ -1,10 +1,6 @@
 # Aura — AI Coach & Therapist Bot for Telegram
 
 <p align="center">
-  <img src="docs/images/aura-banner.png" alt="Aura Banner" width="600">
-</p>
-
-<p align="center">
   <b>An autonomous AI coach that runs 24/7 on n8n — empathetic conversations, proactive check-ins, and weekly growth summaries.</b>
 </p>
 
@@ -264,7 +260,7 @@ aura-therapist-bot/
 │   ├── ARCHITECTURE.md             # Detailed architecture & node breakdown
 │   ├── SETUP.md                    # Step-by-step setup guide
 │   └── images/
-│       └── aura-banner.png         # Banner image (add your own)
+│       └── (add your own screenshots here)
 └── sanitize.py                     # Script used to clean personal data (dev reference)
 ```
 

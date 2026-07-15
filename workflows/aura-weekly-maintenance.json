@@ -36,7 +36,7 @@
       "name": "Get a document",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -108,7 +108,7 @@ STRICT PROCESSING RULES:
       "name": "Update a document",
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       }
@@ -304,7 +304,7 @@ IMPORTANT FORMATTING: Output is for Telegram. NEVER use HTML tags like <ul>, <ol
       "retryOnFail": true,
       "credentials": {
         "googleDocsOAuth2Api": {
-          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
           "name": "Google Docs account"
         }
       },
