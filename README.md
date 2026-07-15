@@ -35,7 +35,7 @@ Aura adapts her tone dynamically: empathetic when you're struggling, challenging
 |---|---|---|---|
 | 💬 **Smart Chat** | `aura-chat` | Telegram message | Multi-modal conversations with context from your diary & profile. Handles text, voice memos, and images. |
 | ☀️ **Proactive Check-in** | `aura-proactive` | Daily schedule | Checks your last active date. If you haven't messaged in 2+ days, sends a personalized nudge referencing your last conversation. |
-| 📝 **Weekly Summary** | `aura-weekly-maintenance` | Weekly schedule | Reads the week's conversation history, creates a deep psychological narrative for long-term memory, archives the raw diary, and sends you a friendly summary. |
+| 📝 **Weekly Rotation** | `aura-weekly-maintenance` | Weekly schedule | Processes the week's conversations: (1) generates a deep psychological summary for the **Full History** archive, (2) **resets the Master Diary** to keep per-message token costs stable, (3) sends a user-friendly recap via Telegram. Designed primarily as a **token cost control mechanism** — without it, the growing diary would make every message progressively more expensive. |
 
 ---
 
@@ -90,6 +90,64 @@ Aura runs entirely on **n8n** — a self-hosted workflow automation platform. No
 ```
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed node-by-node breakdown and Mermaid diagrams.
+
+---
+
+## 💰 Cost Efficiency & Context Caching
+
+Aura is designed to be **cheap to run** — typically **under $0.50/month** for daily use. Three design decisions make this possible:
+
+### 1. Gemini Context Caching (automatic)
+
+Google Gemini automatically caches repeated prompt prefixes. Aura's system prompt is structured so that the **long, static portion** (persona, rules, tone, protocol) comes first in the prompt — before the dynamic conversation history. This means:
+
+- The system prompt is a **cache hit** on every message — you're billed for cached tokens at **~90% discount**
+- Only the conversation history and latest message count as uncached tokens
+- A dedicated **Cache Log** Google Sheet tracks every API call with `HIT / MISS`, token counts, and model used — giving full visibility into caching efficiency
+
+```
+API Call Breakdown (typical text message):
+┌────────────────────────────────────────┐
+│ System prompt (cached)  →  ~2,000 tokens  │  90% cheaper
+│ User profile (cached)   →    ~500 tokens  │  90% cheaper
+│ Live diary (dynamic)   →  ~1,500 tokens  │  full price
+│ Latest message          →    ~100 tokens  │  full price
+│ Aura's response         →    ~300 tokens  │  output tokens
+├────────────────────────────────────────┤
+│ Total cost per message: ~$0.001          │
+└────────────────────────────────────────┘
+```
+
+### 2. `pro:` Prefix for Model Selection
+
+The user controls which model to use per message:
+- **Default** → `gemini-2.5-flash` (faster, almost free)
+- **`pro:` prefix** → `gemini-2.5-pro` (deeper reasoning, only when needed)
+
+This avoids paying Pro prices for simple "how are you" exchanges.
+
+### 3. Weekly Diary Rotation
+
+Without intervention, the Live Diary would grow indefinitely — making every API call more expensive over time. The weekly maintenance workflow solves this by:
+- Summarizing the week into a condensed psychological narrative (~20-30% of original volume)
+- Archiving the full raw diary to a separate **Full History** document
+- **Resetting the Live Diary** to a blank state
+
+This keeps the per-message token count stable week after week, while preserving all history in a searchable archive.
+
+---
+
+## 📄 Document System
+
+Aura uses Google Docs as a lightweight, free document store. Each document has a specific role:
+
+| Document | Type | Purpose | Updated |
+|---|---|---|---|
+| **Master Diary** (`Live Diary`) | Google Doc | The active conversation log for the **current week**. Every user message and Aura response is appended here. Serves as the primary context for the AI. | Every message |
+| **User Profile** | Google Doc | Persistent facts about the user — goals, relationships, preferences, patterns. Written once and occasionally updated. Provides stable context across all conversations. | Manual / rarely |
+| **Full History** | Google Doc | **Long-term archive.** The weekly maintenance workflow appends a deep psychological summary here, then copies the raw diary before clearing it. Accumulates over time — a searchable record of all past conversations. | Weekly |
+| **Activity Sheet** | Google Sheets | Tracks the timestamp of the last user interaction. Checked daily by the proactive workflow to decide whether to send a nudge. | Every message |
+| **Cache Log** | Google Sheets | API usage analytics — timestamp, model, total tokens, cached tokens, and cache hit/miss status. Useful for monitoring costs and caching efficiency. | Every message |
 
 ---
 
@@ -152,7 +210,7 @@ Detailed step-by-step instructions: [docs/SETUP.md](docs/SETUP.md)
 |---|---|---|---|
 | Chat | `workflows/aura-chat.json` | Telegram webhook | Always on |
 | Proactive Check-in | `workflows/aura-proactive.json` | Schedule | Daily at 10:00 |
-| Weekly Maintenance | `workflows/aura-weekly-maintenance.json` | Schedule | Weekly |
+| Weekly Rotation | `workflows/aura-weekly-maintenance.json` | Schedule | Weekly |
 
 ### Message Routing
 
@@ -165,12 +223,14 @@ The chat workflow handles multiple input types:
 
 ### Context Window
 
-Every message includes:
-1. The user's latest message
-2. The full **Live Diary** (recent conversation history)
-3. The **User Profile** (persistent facts, preferences, patterns)
+Every message to the AI includes:
 
-This gives the AI rich context without requiring a vector database.
+1. **System Prompt** — Aura's persona, rules, and tone (static → cached by Gemini)
+2. **User Profile** — Stable facts, goals, and patterns (rarely changes → cached)
+3. **Master Diary** — The current week's conversation log (dynamic, grows until reset)
+4. **The latest user message** — text, transcribed voice, or image description
+
+See the [Document System](#-document-system) table above for details on each document's lifecycle.
 
 ---
 
