@@ -195,32 +195,38 @@ The core purpose of the weekly maintenance workflow is **cost control**. Without
 
 - The Master Diary would grow by ~2,000-5,000 tokens per day
 - After one month, every API call would include ~60,000-150,000 tokens of history
-- Gemini Flash pricing: $0.075/million input tokens → a single message could cost $0.01 instead of $0.001
-- After 6 months, costs would be unsustainable
+- At Gemini Flash pricing, a single conversation could consume 10-20x more input tokens than necessary
+- After 6 months, the diary alone would dominate API costs
 
-The rotation strategy keeps per-message costs **flat and predictable** regardless of how long Aura has been running.
+The rotation strategy keeps per-message token counts **flat and predictable** regardless of how long Aura has been running.
 
 ---
 
 ## Cost Efficiency & Gemini Context Caching
 
-Aura's prompt architecture is designed to maximize **Gemini's automatic context caching**, which gives ~90% discount on repeated prompt prefixes.
+Aura's prompt architecture is designed to work with **Gemini's automatic context caching**, which gives a ~90% discount on repeated prompt prefixes. However, the cache has important limitations.
 
-### How caching works in Aura
+### How caching works (and when it doesn't)
 
-The prompt sent to Gemini on every message has this structure:
+Gemini's context cache is **short-lived** — typically lasting **5–10 minutes** between requests, sometimes longer but never guaranteed. This means:
+
+- The cache is useful during **rapid back-and-forth exchanges** (e.g., an active therapy session where messages are exchanged every minute)
+- For **most real-world usage** — checking in a few times throughout the day — every message starts fresh with **no cache hit**
+- The Cache Log sheet exists specifically to monitor this: it tracks `HIT / MISS` on every API call, giving real visibility into caching behavior
+
+**Prompt structure (designed for cache potential):**
 
 ```
 ┌──────────────────────────────────┐
 │ SYSTEM INSTRUCTION (persona,      │
-│ rules, tone, protocol)           │  ← STATIC → Cached after first call
-│ ~2,000 tokens                    │     90% discount on all subsequent calls
+│ rules, tone, protocol)           │  ← STATIC → Cached IF within 5-10 min window
+│ ~2,000 tokens                    │
 ├──────────────────────────────────┤
-│ USER PROFILE (goals, patterns)   │  ← RARELY CHANGES → Cached most of the time
+│ USER PROFILE (goals, patterns)   │  ← RARELY CHANGES → Same cache window
 │ ~500 tokens                      │
 ├──────────────────────────────────┤
-│ MASTER DIARY (conversation log)   │  ← DYNAMIC → Full price, but kept small
-│ ~1,000-3,000 tokens              │     via weekly rotation
+│ MASTER DIARY (conversation log)   │  ← DYNAMIC → Always full price
+│ ~1,000-3,000 tokens              │     Reset weekly to stay manageable
 ├──────────────────────────────────┤
 │ LATEST USER MESSAGE              │  ← DYNAMIC → Full price (small)
 │ ~50-200 tokens                   │
@@ -228,22 +234,31 @@ The prompt sent to Gemini on every message has this structure:
 OUTPUT: Aura's response (~200-500 tokens, standard output pricing)
 ```
 
-**Key design decisions for caching:**
+**Key design decisions:**
 
-1. **System prompt comes first** — Gemini caches from the start of the input. By putting the longest static content at the beginning, we maximize the cacheable prefix.
-2. **User profile is stable** — written once, rarely edited. Stays cached between sessions.
-3. **Master Diary is the only growing element** — and it's reset weekly to prevent cache boundary creep.
-4. **Cache hit/miss is tracked** — the Cache Log Google Sheet records every API call with token breakdowns, making caching efficiency measurable.
+1. **System prompt comes first** — When caching does activate (rapid exchanges), the longest static content is at the start, maximizing the cacheable prefix
+2. **User profile is stable** — written once, rarely edited
+3. **Master Diary is the only growing element** — and it's reset weekly to prevent unbounded token growth
+4. **Cache hit/miss is tracked** — the Cache Log Google Sheet records every API call, so you can see exactly when caching helps and when it doesn't
 
-### Typical costs
+> 💡 **Reality check:** For a bot checked 3-5 times throughout the day with short exchanges, expect **most calls to be cache misses**. Caching is a nice bonus during active conversations, not a primary cost strategy. The weekly diary rotation and `pro:` prefix are the real cost controls.
 
-| Usage pattern | Messages/day | Est. monthly cost |
+### Real-world costs
+
+Costs depend heavily on language, message length, and conversation frequency. Czech (and other non-English languages) typically consume **1.5–2x more tokens** per message than English. Based on real usage:
+
+| Usage pattern | Est. monthly cost | Real-world example |
 |---|---|---|
-| Light (3-5 messages) | ~120 | ~$0.10 |
-| Moderate (10-15 messages) | ~400 | ~$0.30 |
-| Heavy (30+ messages) | ~1,000 | ~$0.75 |
+| Light (a few messages/day) | **$8–12** (~200–300 CZK) | Quick check-ins, short reflections |
+| Moderate (active daily use) | **$15–20** (~350–500 CZK) | Regular therapeutic conversations, voice messages, image analysis |
+| Heavy (multiple long sessions/day) | **$30–40** (~750–1,000 CZK) | Deep sessions with `pro:` model, multi-modal input, growing diary before rotation |
 
-> 💡 Context caching makes the system prompt effectively free after the first message of a session. Only conversation history and response generation incur meaningful costs.
+Factors that increase cost:
+- **Language** — Czech/German/Slavic languages use more tokens than English
+- **Voice messages** — audio transcription adds tokens
+- **Image analysis** — vision API calls cost extra
+- **`pro:` model** — Gemini Pro is more expensive per token
+- **Diary growth** — end-of-week messages cost more than Monday messages (before rotation)
 
 ---
 

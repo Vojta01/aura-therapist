@@ -91,28 +91,17 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed node-by-node breakdown 
 
 ## 💰 Cost Efficiency & Context Caching
 
-Aura is designed to be **cheap to run** — typically **under $0.50/month** for daily use. Three design decisions make this possible:
+Aura is designed with cost efficiency in mind — but real-world LLM usage isn't free. With a daily habit of therapeutic conversations, expect to spend roughly **$8–20/month** (200–500 CZK). Heavy usage months can reach **$40** (1,000 CZK). Three design decisions help keep this in check:
 
-### 1. Gemini Context Caching (automatic)
+### 1. Gemini Context Caching (best-effort)
 
-Google Gemini automatically caches repeated prompt prefixes. Aura's system prompt is structured so that the **long, static portion** (persona, rules, tone, protocol) comes first in the prompt — before the dynamic conversation history. This means:
+Google Gemini automatically caches repeated prompt prefixes, giving a ~90% discount on cached tokens. However, **this cache is short-lived** — typically lasting only **5–10 minutes** between requests (sometimes longer, but not guaranteed). This means:
 
-- The system prompt is a **cache hit** on every message — you're billed for cached tokens at **~90% discount**
-- Only the conversation history and latest message count as uncached tokens
-- A dedicated **Cache Log** Google Sheet tracks every API call with `HIT / MISS`, token counts, and model used — giving full visibility into caching efficiency
+- The system prompt is cached **only during rapid back-and-forth exchanges** — not on the first message of a session or after a pause
+- For most real-world usage (checking in a few times a day), every message starts fresh with **no cache hit**
+- A dedicated **Cache Log** Google Sheet tracks every API call with `HIT / MISS`, token counts, and model used — specifically to monitor how often caching actually kicks in
 
-```
-API Call Breakdown (typical text message):
-┌────────────────────────────────────────┐
-│ System prompt (cached)  →  ~2,000 tokens  │  90% cheaper
-│ User profile (cached)   →    ~500 tokens  │  90% cheaper
-│ Live diary (dynamic)   →  ~1,500 tokens  │  full price
-│ Latest message          →    ~100 tokens  │  full price
-│ Aura's response         →    ~300 tokens  │  output tokens
-├────────────────────────────────────────┤
-│ Total cost per message: ~$0.001          │
-└────────────────────────────────────────┘
-```
+The prompt is still structured with the static system prompt first to maximize cache potential when rapid exchanges do happen, but caching is treated as a bonus, not a guarantee.
 
 ### 2. `pro:` Prefix for Model Selection
 
