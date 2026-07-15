@@ -189,6 +189,62 @@ flowchart TD
 1. **Pass 1 (Deep summary):** Detailed, therapeutic-grade narrative for long-term memory. Too long and clinical for a Telegram message.
 2. **Pass 2 (User summary):** Friendly, concise, formatted for Telegram (plain text, bold via `<b>` tags). Designed to be read in 2-3 minutes.
 
+### Why weekly rotation? (Token economics)
+
+The core purpose of the weekly maintenance workflow is **cost control**. Without it:
+
+- The Master Diary would grow by ~2,000-5,000 tokens per day
+- After one month, every API call would include ~60,000-150,000 tokens of history
+- Gemini Flash pricing: $0.075/million input tokens → a single message could cost $0.01 instead of $0.001
+- After 6 months, costs would be unsustainable
+
+The rotation strategy keeps per-message costs **flat and predictable** regardless of how long Aura has been running.
+
+---
+
+## Cost Efficiency & Gemini Context Caching
+
+Aura's prompt architecture is designed to maximize **Gemini's automatic context caching**, which gives ~90% discount on repeated prompt prefixes.
+
+### How caching works in Aura
+
+The prompt sent to Gemini on every message has this structure:
+
+```
+┌──────────────────────────────────┐
+│ SYSTEM INSTRUCTION (persona,      │
+│ rules, tone, protocol)           │  ← STATIC → Cached after first call
+│ ~2,000 tokens                    │     90% discount on all subsequent calls
+├──────────────────────────────────┤
+│ USER PROFILE (goals, patterns)   │  ← RARELY CHANGES → Cached most of the time
+│ ~500 tokens                      │
+├──────────────────────────────────┤
+│ MASTER DIARY (conversation log)   │  ← DYNAMIC → Full price, but kept small
+│ ~1,000-3,000 tokens              │     via weekly rotation
+├──────────────────────────────────┤
+│ LATEST USER MESSAGE              │  ← DYNAMIC → Full price (small)
+│ ~50-200 tokens                   │
+└──────────────────────────────────┘
+OUTPUT: Aura's response (~200-500 tokens, standard output pricing)
+```
+
+**Key design decisions for caching:**
+
+1. **System prompt comes first** — Gemini caches from the start of the input. By putting the longest static content at the beginning, we maximize the cacheable prefix.
+2. **User profile is stable** — written once, rarely edited. Stays cached between sessions.
+3. **Master Diary is the only growing element** — and it's reset weekly to prevent cache boundary creep.
+4. **Cache hit/miss is tracked** — the Cache Log Google Sheet records every API call with token breakdowns, making caching efficiency measurable.
+
+### Typical costs
+
+| Usage pattern | Messages/day | Est. monthly cost |
+|---|---|---|
+| Light (3-5 messages) | ~120 | ~$0.10 |
+| Moderate (10-15 messages) | ~400 | ~$0.30 |
+| Heavy (30+ messages) | ~1,000 | ~$0.75 |
+
+> 💡 Context caching makes the system prompt effectively free after the first message of a session. Only conversation history and response generation incur meaningful costs.
+
 ---
 
 ## Data Model
