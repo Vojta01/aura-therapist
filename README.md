@@ -25,6 +25,36 @@ Aura adapts her tone dynamically: empathetic when you're struggling, challenging
 
 ---
 
+## 🔴 The Problem: Why Aura exists
+
+Standard AI chat interfaces (ChatGPT, Gemini Chat, etc.) have a fundamental flaw for ongoing personal work like therapy or coaching:
+
+**Context vanishes.**
+
+Every chat session has a limited context window. After 20–30 exchanges, the AI starts forgetting what you talked about at the beginning of the conversation. Close the tab and the entire session is lost. Open a new one and the AI has no memory of who you are, what you've been through, or what you're working on.
+
+This makes long-term therapeutic work nearly impossible. You can't build on insights from last week. You can't reference a breakthrough from three weeks ago. The AI resets to a blank slate every time.
+
+### How Aura solves it
+
+| Problem | Standard Chat | Aura |
+|---|---|---|
+| **Conversation history** | Fits in context window (~32K tokens), oldest messages dropped | Written to a **Master Diary** (Google Doc). Every message persists forever. |
+| **Cross-session memory** | Each session starts blank | Aura reads the full diary + user profile on every message. You are **never a stranger**. |
+| **Multi-modal persistence** | Voice/image context lost after a few messages | Voice transcriptions and image descriptions are stored as text in the diary. |
+| **Proactive engagement** | Only responds when you speak | Checks in after inactivity, references your last meaningful topic. |
+| **Long-term growth** | No mechanism to condense history | Weekly rotation creates a **structured psychological narrative** — insights compound over time. |
+
+### Additional architectural benefits
+
+- **No vendor lock-in** — all your conversations are plain text in Google Docs, not trapped in a proprietary chat interface. You own your data.
+- **Multi-modal memory** — voice messages are transcribed, images are described. Everything becomes searchable text in the diary.
+- **Cost-aware persistence** — the weekly diary rotation keeps token usage bounded. Without it, a 6-month diary would cost more to process than the therapy conversation itself.
+- **Resilient to outages** — the diary persists in Google Drive independent of any AI service. If Gemini is down, your history isn't lost.
+- **Human-readable archive** — the Full History document is a chronological narrative you can read, search, and export. It's not a black box.
+
+---
+
 ## Features
 
 | Feature | Workflow | Trigger | Description |
