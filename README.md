@@ -47,10 +47,10 @@ This makes long-term therapeutic work nearly impossible. You can't build on insi
 
 ### Additional architectural benefits
 
-- **No vendor lock-in** — all your conversations are plain text in Google Docs, not trapped in a proprietary chat interface. You own your data.
+- **No vendor lock-in** — all your conversations are plain text in Google Docs, not trapped in a proprietary chat interface. You own your data and can switch AI providers (Gemini → Claude → GPT) without losing context.
 - **Multi-modal memory** — voice messages are transcribed, images are described. Everything becomes searchable text in the diary.
 - **Cost-aware persistence** — the weekly diary rotation keeps token usage bounded. Without it, a 6-month diary would cost more to process than the therapy conversation itself.
-- **Resilient to outages** — the diary persists in Google Drive independent of any AI service. If Gemini is down, your history isn't lost.
+- **Data survives provider outages** — all conversation history lives in your Google Drive, independent of any AI service. If Gemini is down, your history isn't lost — you can pick up with a different provider or review past sessions while waiting for recovery.
 - **Human-readable archive** — the Full History document is a chronological narrative you can read, search, and export. It's not a black box.
 
 ---
