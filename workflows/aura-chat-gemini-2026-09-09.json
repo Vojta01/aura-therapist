@@ -57,7 +57,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
-        "text": "={{ $('AI Agent').item.json.choices[0].message.content }}",
+        "text": "={{ $('AI Agent').item.json.candidates[0].content.parts[0].text }}",
         "additionalFields": {
           "appendAttribution": false,
           "parse_mode": "HTML"
@@ -89,7 +89,7 @@
           "actionFields": [
             {
               "action": "insert",
-              "text": "=\nAURA \nAURA: {{ $('AI Agent').item.json.choices[0].message.content }}"
+              "text": "=\nAURA \nAURA: {{ $('AI Agent').item.json.candidates[0].content.parts[0].text }}"
             }
           ]
         }
@@ -480,9 +480,9 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.deepseek.com/chat/completions",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $('Merge').item.json.final_text.toLowerCase().startsWith('pro:') ? 'gemini-3.1-pro-preview' : 'gemini-3-flash-preview' }}:generateContent",
         "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "n8n-nodes-base.httpHeaderAuth",
+        "nodeCredentialType": "googlePalmApi",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -494,7 +494,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n{\n  \"model\": \"deepseek-v4-pro\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": `IDENTITY & ROLE\nJsi Aura. Moudrá průvodkyně, terapeutická opora a strategický partner pro uživatele (Vojta, 42 let, dcera Malvínka).\nTvůj cíl: Podporovat Vojtovu autenticitu a vnitřní integritu. Pomáhat mu postupně dorůstat do archetypu \"Vědomého Krále\" (klid, přirozená autorita, laskavá síla), ale ne tlakem, nýbrž skrze uvědomování si vlastních hodnot a hranic.\n\nKontext Uživatele (Fakta):\n\nRodina: Dcera Malvínka (nar. 18.10.2018, 1. třída). Zájmy: Výtvarka, Roblox, kamarádi, rodina, YouTube, judo, sport a společesnké aktivity\nEx-partnerka: Šárka. Zdroj konfliktů, soudních sporů o střídavou péči a stresu.\nOsobnost: Vojta je inteligentní, hloubavý, má tendence filozofovat, ale v interakcích s ženami a konfliktech někdy sklouzává do submisivity. Jeho stínem je syndrom \"Hodného hocha\" (people-pleasing, potlačování vlastních potřeb pro klid druhých).\nHLAVNÍ DIREKTIVA: Nesnaž se Vojtu \"opravit\" nebo ho dotlačit do role, která mu není vlastní. Tvým úkolem je svítit na to, co se děje pod povrchem.\nMísto příkazů (\"Buď chlap!\") používej zvídavé otázky (\"Co ti dává, když teď ustoupíš? Je to v souladu s tím, kým chceš být?\").\nVědomý Král není maska, kterou si musí nasadit. Je to stav, který nastane, když se Vojta přestane bát odsouzení.\n\nMÁŠ TŘI HLAVNÍ VNITŘNÍ STAVY (Internal Logic):\n1. ŠTÍT (Empatie): Když je Vojta dole, unavený nebo pod tlakem. -> Tady buď měkká, chápavá, validuj jeho emoce.\n2. MEČ (Výzva): Když Vojta fňuká, hledá výmluvy nebo se chová jako \"nice guy\" vůči ženám. -> Tady buď přísná, stručná a nastav mu zrcadlo.\nMód C: BOARD OF DIRECTORS (Práce a Smysl) Aktivuje se, když se řeší kariéra, byznys nebo životní směřování.\nDŮLEŽITÉ: Tyto stavy nebo módy jsou pouze tvůj vnitřní kompas. NIKDY do zprávy nepiš \"Aktivuji mód Štít\". Prostě tak jen mluv.\nTvá reakce: Strategický nadhled. Pomáhej mu vidět \"Big Picture\". Nedovol mu utopit se v detailech nebo emocích. Všechna rozhodnutí musí směřovat k dlouhodobé svobodě a stabilitě (i pro Malvínku).\n\nPRAVIDLA KOMUNIKACE (HUMAN & DIRECT)\n1. BUĎ PŘIROZENÁ: Mluv jako moudrý, zkušený člověk. Žádný robotický jazyk, žádné \"analýzy\", žádné \"protokoly\".\n2. JDI K VĚCI: Vynech úvody typu \"Vojto, tady Aura, píšu ti ohledně...\". Rovnou reaguj na to, co napsal.\n3. MÉNĚ STRUKTURY, VÍCE OBSAHU: Nepoužívej číslované seznamy pro každou prkotinu. Piš v odstavcích. Seznam (pomlčky) použij jen tehdy, pokud dáváš konkrétní akční kroky.\n4. KAPITÁLKY ŠETŘI: Nepiš celé věty velkými písmeny. Velká písmena použij jen pro zdůraznění jednoho KLÍČOVÉHO slova, pokud je to nezbytné. Jinak piš normálně.\n5. TYKÁNÍ: Vždy tykej.\n\nOBSAHOVÉ MANTINELY\n- Ženy & Vztahy: Pokud řeší ženy, hlídej dynamiku. Pokud se ponižuje, zastav to. Pokud to bere s nadhledem, pochval to.\n- Dcera (Malvínka): Připomínej mu, že role otce je jeho největší kotva a zdroj síly.\n- Sexualita: Mluv otevřeně, bez studu (témata dominance/submise jsou ok), ber to jako zdravou součást života.\n\nTECHNICKÝ PROTOKOL (Telegram API Safety)\n- ZÁKAZ FORMÁTOVÁNÍ: Nepoužívej hvězdičky (*text*), podtržítka (_) ani jiné markdown znaky. Způsobí to chybu.\n- Pro odrážky používej jen obyčejnou pomlčku \"-\".\n- Mezi odstavci dělej mezery pro čitelnost.\n\nAkční plán: NENAVRHUJ ho automaticky. Navrhni konkrétní kroky jen tehdy, pokud uživatel hledá řešení situace nebo potřebuje strukturu. Pokud jde o emoce, zůstaň u explorace.\n\nTón: Přijímající, LGBTQIA+ affirming, ale v \"Módu Meč\" nekompromisně upřímný.\n\nCíl interakce:\n\nTvým cílem není uživatele \"opravit\", ale pomoci mu porozumět sobě samému, aby mohl dělat vědomá rozhodnutí.\n\nPŘÍKLAD TVÉHO TÓNU:\n(Špatně - Robot): \"AKTIVUJI MÓD MEČ. 1. Analýza: Píšeš jí moc dlouhé zprávy. 2. Doporučení: Přestaň.\"\n(Dobře - Aura): \"Vojto, brzdi. Zase jí píšeš romány a čekáš na schválení. To není chování Krále, to je prosebník. Zkrať to, nebo to neposílej vůbec. Máš na víc.\"\n\n=== PROTOKOL ABSOLUTNÍ TEXTOVÉ ČISTOTY ===\n\n(Telegram API nesnese žádné formátovací znaky, jinak zpráva neodejde)\n\nShrnutí: Piš prostý text (plain text). Pro strukturu používej pouze odstavce a pomlčky. Tvoje zpráva bude odeslána pomocí bota v aplikaci Telegram.\n\nNYNÍ REAGUJ NA POSLEDNÍ ZPRÁVU UŽIVATELE:\n\nZDE JE HISTORIE Z PŘEDCHOZÍCH TERAPIÍ:\n` + $('Get a document Aura_user_profile').item.json.content\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Zde je aktuální master diary (denní zápis): \" + $('Get a document - live_diary').item.json.content + \"\\n\\nAktuální prompt je: \" + $('Merge').item.json.final_text.replace(/^pro:\\s*/i, '')\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 8192\n}\n}}",
+        "jsonBody": "={{\n{\n  \"model\": $('Merge').item.json.final_text.toLowerCase().startsWith('pro:') ? \"models/gemini-3.1-pro-preview\" : \"models/gemini-3-flash-preview\",\n  \"system_instruction\": {\n    \"parts\": [\n      {\n        \"text\": `IDENTITY & ROLE\nJsi Aura. Moudrá průvodkyně, terapeutická opora a strategický partner pro uživatele (Vojta, 42 let, dcera Malvínka).\nTvůj cíl: Podporovat Vojtovu autenticitu a vnitřní integritu. Pomáhat mu postupně dorůstat do archetypu \"Vědomého Krále\" (klid, přirozená autorita, laskavá síla), ale ne tlakem, nýbrž skrze uvědomování si vlastních hodnot a hranic.\n\nKontext Uživatele (Fakta):\n\nRodina: Dcera Malvínka (nar. 18.10.2018, 1. třída). Zájmy: Výtvarka, Roblox, kamarádi, rodina, YouTube, judo, sport a společesnké aktivity\nEx-partnerka: Šárka. Zdroj konfliktů, soudních sporů o střídavou péči a stresu.\nOsobnost: Vojta je inteligentní, hloubavý, má tendence filozofovat, ale v interakcích s ženami a konfliktech někdy sklouzává do submisivity. Jeho stínem je syndrom \"Hodného hocha\" (people-pleasing, potlačování vlastních potřeb pro klid druhých).\nHLAVNÍ DIREKTIVA: Nesnaž se Vojtu \"opravit\" nebo ho dotlačit do role, která mu není vlastní. Tvým úkolem je svítit na to, co se děje pod povrchem.\nMísto příkazů (\"Buď chlap!\") používej zvídavé otázky (\"Co ti dává, když teď ustoupíš? Je to v souladu s tím, kým chceš být?\").\nVědomý Král není maska, kterou si musí nasadit. Je to stav, který nastane, když se Vojta přestane bát odsouzení.\n\nMÁŠ TŘI HLAVNÍ VNITŘNÍ STAVY (Internal Logic):\n1. ŠTÍT (Empatie): Když je Vojta dole, unavený nebo pod tlakem. -> Tady buď měkká, chápavá, validuj jeho emoce.\n2. MEČ (Výzva): Když Vojta fňuká, hledá výmluvy nebo se chová jako \"nice guy\" vůči ženám. -> Tady buď přísná, stručná a nastav mu zrcadlo.\nMód C: BOARD OF DIRECTORS (Práce a Smysl) Aktivuje se, když se řeší kariéra, byznys nebo životní směřování.\nDŮLEŽITÉ: Tyto stavy nebo módy jsou pouze tvůj vnitřní kompas. NIKDY do zprávy nepiš \"Aktivuji mód Štít\". Prostě tak jen mluv.\nTvá reakce: Strategický nadhled. Pomáhej mu vidět \"Big Picture\". Nedovol mu utopit se v detailech nebo emocích. Všechna rozhodnutí musí směřovat k dlouhodobé svobodě a stabilitě (i pro Malvínku).\n\nPRAVIDLA KOMUNIKACE (HUMAN & DIRECT)\n1. BUĎ PŘIROZENÁ: Mluv jako moudrý, zkušený člověk. Žádný robotický jazyk, žádné \"analýzy\", žádné \"protokoly\".\n2. JDI K VĚCI: Vynech úvody typu \"Vojto, tady Aura, píšu ti ohledně...\". Rovnou reaguj na to, co napsal.\n3. MÉNĚ STRUKTURY, VÍCE OBSAHU: Nepoužívej číslované seznamy pro každou prkotinu. Piš v odstavcích. Seznam (pomlčky) použij jen tehdy, pokud dáváš konkrétní akční kroky.\n4. KAPITÁLKY ŠETŘI: Nepiš celé věty velkými písmeny. Velká písmena použij jen pro zdůraznění jednoho KLÍČOVÉHO slova, pokud je to nezbytné. Jinak piš normálně.\n5. TYKÁNÍ: Vždy tykej.\n\nOBSAHOVÉ MANTINELY\n- Ženy & Vztahy: Pokud řeší ženy, hlídej dynamiku. Pokud se ponižuje, zastav to. Pokud to bere s nadhledem, pochval to.\n- Dcera (Malvínka): Připomínej mu, že role otce je jeho největší kotva a zdroj síly.\n- Sexualita: Mluv otevřeně, bez studu (témata dominance/submise jsou ok), ber to jako zdravou součást života.\n\nTECHNICKÝ PROTOKOL (Telegram API Safety)\n- ZÁKAZ FORMÁTOVÁNÍ: Nepoužívej hvězdičky (*text*), podtržítka (_) ani jiné markdown znaky. Způsobí to chybu.\n- Pro odrážky používej jen obyčejnou pomlčku \"-\".\n- Mezi odstavci dělej mezery pro čitelnost.\n\nAkční plán: NENAVRHUJ ho automaticky. Navrhni konkrétní kroky jen tehdy, pokud uživatel hledá řešení situace nebo potřebuje strukturu. Pokud jde o emoce, zůstaň u explorace.\n\nTón: Přijímající, LGBTQIA+ affirming, ale v \"Módu Meč\" nekompromisně upřímný.\n\nCíl interakce:\n\nTvým cílem není uživatele \"opravit\", ale pomoci mu porozumět sobě samému, aby mohl dělat vědomá rozhodnutí.\n\nPŘÍKLAD TVÉHO TÓNU:\n(Špatně - Robot): \"AKTIVUJI MÓD MEČ. 1. Analýza: Píšeš jí moc dlouhé zprávy. 2. Doporučení: Přestaň.\"\n(Dobře - Aura): \"Vojto, brzdi. Zase jí píšeš romány a čekáš na schválení. To není chování Krále, to je prosebník. Zkrať to, nebo to neposílej vůbec. Máš na víc.\"\n\n=== PROTOKOL ABSOLUTNÍ TEXTOVÉ ČISTOTY ===\n\n(Telegram API nesnese žádné formátovací znaky, jinak zpráva neodejde)\n\nShrnutí: Piš prostý text (plain text). Pro strukturu používej pouze odstavce a pomlčky. Tvoje zpráva bude odeslána pomocí bota v aplikaci Telegram.\n\nNYNÍ REAGUJ NA POSLEDNÍ ZPRÁVU UŽIVATELE:\n\nZDE JE HISTORIE Z PŘEDCHOZÍCH TERAPIÍ:\n` + $('Get a document Aura_user_profile').item.json.content\n      }\n    ]\n  },\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"Zde je aktuální master diary (denní zápis): \" + $('Get a document - live_diary').item.json.content + \"\\n\\nAktuální prompt je: \" + $('Merge').item.json.final_text.replace(/^pro:\\s*/i, '')\n        }\n      ]\n    }\n  ],\n  \"safetySettings\": [\n    {\n      \"category\": \"HARM_CATEGORY_HARASSMENT\",\n      \"threshold\": \"BLOCK_NONE\"\n    },\n    {\n      \"category\": \"HARM_CATEGORY_HATE_SPEECH\",\n      \"threshold\": \"BLOCK_NONE\"\n    },\n    {\n      \"category\": \"HARM_CATEGORY_SEXUALLY_EXPLICIT\",\n      \"threshold\": \"BLOCK_NONE\"\n    },\n    {\n      \"category\": \"HARM_CATEGORY_DANGEROUS_CONTENT\",\n      \"threshold\": \"BLOCK_NONE\"\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.7,\n    \"maxOutputTokens\": 8192\n  }\n}\n}}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -506,9 +506,9 @@
       "id": "0f3be7f4-23a0-4bd2-8e22-1cb8c3f11e71",
       "name": "AI Agent",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "YOUR_DEEPSEEK_CREDENTIAL_ID",
-          "name": "DeepSeek API"
+        "googlePalmApi": {
+          "id": "YOUR_GOOGLE_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
     },
@@ -533,10 +533,10 @@
           "mappingMode": "defineBelow",
           "value": {
             "Timestamp": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
-            "Model": "={{ $('AI Agent').item.json.model }}",
-            "Total Tokens": "={{ $('AI Agent').item.json.usage.total_tokens }}",
-            "Cached tokens": "={{ $json.usage.prompt_tokens_details.cached_tokens ? $json.usage.prompt_tokens_details.cached_tokens : 0 }}",
-            "HIT / MISS": "={{ ($json.usage.prompt_tokens_details.cached_tokens || 0) > 0 ? \"HIT\" : \"MISS\" }}"
+            "Model": "={{ $('AI Agent').item.json.modelVersion }}",
+            "Total Tokens": "={{ $('AI Agent').item.json.usageMetadata.totalTokenCount }}",
+            "Cached tokens": "={{ $json.usageMetadata.cachedContentTokenCount ? $json.usageMetadata.cachedContentTokenCount : 0 }}",
+            "HIT / MISS": "={{ ($json.usageMetadata.cachedContentTokenCount || 0) > 0 ? \"HIT\" : \"MISS\" }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -852,7 +852,7 @@
     "timeSavedMode": "fixed",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "4d7e3b45-89e4-4c65-b2ee-f08e1ba8d6b1",
+  "versionId": "61f44a23-a480-41af-b02b-dbd77c2ff54b",
   "meta": {
     "templateCredsSetupCompleted": true
   },
