@@ -2,6 +2,24 @@
 
 All notable changes to the Aura workflow collection are documented here.
 
+## 2026-09-10 (2) — Aura chat: max_tokens 8192 → 16384
+
+- **AI Agent** node: request body `"max_tokens"`: 8192 → 16384
+- Nothing else touched (model stays `deepseek-flash`, URL, `messages`, `temperature: 0.7`).
+
+### Why
+
+- `max_tokens` caps **generated (output) tokens only** — the prompt is *not* counted against it
+  (input + output together are bounded by the model's context window). But DeepSeek V4 Flash runs
+  with thinking enabled by default, and **reasoning tokens are drawn from that same output budget**.
+- Measured on the native API (2026-09-10): a trivial prompt generated 200 tokens of which **163 were
+  reasoning** (82 %); with `max_tokens: 64` the model returned `finish_reason: "length"` and an
+  **empty reply**. The API accepts large limits without complaint (16K / 32K / 64K all tested OK).
+
+### Rollback
+
+- Set `"max_tokens"` back to 8192 in the **AI Agent** node (Git: previous state = `9614052`).
+
 ## 2026-09-10 — Aura chat: model switch DeepSeek V4 Pro → DeepSeek Flash
 
 The `Aura` chat workflow's **AI Agent** node now calls model `deepseek-flash`
@@ -37,8 +55,7 @@ alongside `deepseek-v4-pro`) instead of `deepseek-v4-pro`.
 
 ### Note
 
-- `max_tokens` remains 8192. Flash is verbose and spends part of that budget on internal
-  reasoning — if replies come back truncated, raise `max_tokens` to 16384.
+- `max_tokens` was left at 8192 in this change; it was raised to 16384 the same day — see the entry above.
 
 ## 2026-09-09 — Aura chat: Gemini → DeepSeek V4 Pro
 
