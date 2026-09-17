@@ -2,6 +2,24 @@
 
 All notable changes to the Aura workflow collection are documented here.
 
+## 2026-09-10 (3) — Aura chat: model switch DeepSeek Flash → DeepSeek V4 Pro
+
+- **AI Agent** node: request body `"model"`: `deepseek-flash` → `deepseek-v4-pro`
+- `max_tokens` stays 16384; URL, `messages`, `temperature: 0.7` and credentials untouched.
+
+### Why / naming
+
+- Requested as "DeepSeek 4.0 Pro". **There is no 4.0 variant in the API** — `GET /models` returns exactly
+  `deepseek-flash` and `deepseek-v4-pro`, and calls with `deepseek-4.0-pro` / `deepseek-v4.0-pro` fail with
+  HTTP 400: *"The supported API model names are deepseek-flash, deepseek-v4-pro"* (verified 2026-09-10).
+- `deepseek-v4-pro` is the official stable API ID of **DeepSeek V4 Pro GA** (released 2026-08-13, hosted
+  checkpoint `DeepSeek-V4-Pro-0813`, 1.6T total / 49B active params, 1M context, up to 384K output).
+
+### Rollback
+
+- **Back to Flash:** set `"model"` to `deepseek-flash` in the **AI Agent** node
+  (Git: previous state = `6d138b1`).
+
 ## 2026-09-10 (2) — Aura chat: max_tokens 8192 → 16384
 
 - **AI Agent** node: request body `"max_tokens"`: 8192 → 16384
