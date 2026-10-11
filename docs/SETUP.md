@@ -43,6 +43,12 @@ You need a running n8n instance. Options:
    - Go to [Google AI Studio](https://aistudio.google.com/apikey)
    - Create API key
 
+### 1.5 DeepSeek API Key (Chat Model)
+
+1. Create an account at [platform.deepseek.com](https://platform.deepseek.com)
+2. Go to **API Keys** → create a new key
+3. Save it — the chat workflow uses it for the main conversation model
+
 ---
 
 ## 2. n8n Credential Setup
@@ -53,6 +59,8 @@ In n8n, go to **Settings → Credentials** and create these:
 |---|---|---|
 | **Telegram API** | `Telegram account` | Bot token from @BotFather |
 | **Google Gemini(PaLM) API** | `Google Gemini API account` | Gemini API key from AI Studio |
+| **HTTP Bearer Auth** | `Bearer Auth account` | DeepSeek API key (chat workflow's HTTP Request node) |
+| **DeepSeek** | `DeepSeek account` | DeepSeek API key (weekly workflow's DeepSeek Chat Model nodes) |
 | **Google Docs OAuth2** | `Google Docs account` | OAuth2 client ID + secret |
 | **Google Sheets OAuth2** | `Google Sheets account` | OAuth2 client ID + secret |
 | **Google Drive OAuth2** | `Google Drive account` | OAuth2 client ID + secret |
@@ -70,8 +78,8 @@ Create these documents in your Google Drive:
 1. Create a new Google Doc → name it `Aura_live_diary`
 2. Add some initial content (e.g., `-`)
 3. Copy the **document ID** from the URL:
-   - `https://docs.google.com/document/d/YOUR_LIVE_DIARY_DOC_ID.../edit`
-   - The ID is: `YOUR_LIVE_DIARY_DOC_ID...`
+   - `https://docs.google.com/document/d/<DOCUMENT_ID>/edit`
+   - The ID is the long string between `/d/` and `/edit`
 
 ### 3.2 User Profile (Google Doc)
 
@@ -187,16 +195,15 @@ Edit the system prompt in the **AI Agent** node of `aura-chat`:
 
 1. Open the workflow in n8n
 2. Click the AI Agent node
-3. Find the `jsonBody` parameter → locate the `system_instruction.text` field
+3. Find the `jsonBody` parameter → locate the `messages[0].content` field (the system prompt)
 4. Modify the prompt to match your preferences
 
 ### Change Models
 
-To use OpenAI instead of Gemini:
+The chat call is a plain `/chat/completions` HTTP request, so any OpenAI-compatible provider works:
 
-1. Replace the HTTP Request node (AI Agent) with n8n's native **OpenAI** node
-2. Update the proactive and weekly workflows to use the OpenAI Chat Model node
-3. Adjust the `pro:` prefix logic
+1. Update the URL, model name, and API key credential in the **AI Agent** node's `jsonBody`
+2. Vision analysis and voice transcription use Google Gemini — swap those nodes for another multimodal provider if needed
 
 ### Add More Features
 
@@ -213,6 +220,7 @@ The modular design makes it easy to extend:
 |---|---|---|
 | "Workflow execution failed" | Missing/expired credentials | Re-authenticate OAuth2 credentials in n8n |
 | No Telegram reply | Bot token or chat ID wrong | Verify both in Telegram `getUpdates` API |
+| Aura doesn't reply | The model returned an empty response | The workflow retries up to 3× and sends a fallback warning on Telegram. Re-send the message if needed |
 | Voice messages not transcribed | MIME type issue | Check the Code node is setting `audio/ogg` |
 | Proactive check-in never fires | Activity Sheet `gid=0` mismatch | Verify sheet name in the Google Sheets node |
 | Weekly summary empty | Diary doc empty | Ensure Live Diary has conversation history |
@@ -223,6 +231,6 @@ The modular design makes it easy to extend:
 ## 8. Production Tips
 
 - **Monitor executions:** n8n shows failed/successful runs in the Executions tab
-- **API costs:** Gemini Flash is very cheap; Pro costs more. The `pro:` prefix lets you control when to use it
-- **Context caching:** Gemini automatically caches system prompts. Token cache logs in the Cache Sheet show hit/miss rates
+- **API costs:** The chat model uses automatic prompt caching — most input tokens are billed at the ~10× cheaper cached rate. Watch the Cache Log sheet for hit rates
+- **Context caching:** DeepSeek caches prompt prefixes automatically (hours-long TTL), so follow-up messages are much cheaper than the first one
 - **Backups:** Your Google Docs are backed up by Google. For extra safety, periodically export the Full History doc

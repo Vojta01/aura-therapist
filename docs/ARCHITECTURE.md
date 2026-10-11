@@ -26,7 +26,7 @@ graph TB
     end
 
     subgraph "AI Provider"
-        AI[Google Gemini API<br/>Flash + Pro]
+        AI[LLM APIs<br/>DeepSeek V4 Pro + Gemini 2.5 Flash]
     end
 
     TG <-->|messages| W1
@@ -78,8 +78,12 @@ flowchart TD
     J --> K[Update Document<br/>append user message to Live Diary]
     K --> L[Get Document<br/>Live Diary]
     L --> M[Get Document<br/>User Profile]
-    M --> N[AI Agent<br/>Gemini HTTP Request]
-    N --> O[Cache Log<br/>token usage → Sheets]
+    M --> N[AI Agent<br/>DeepSeek HTTP Request]
+    N --> NX{Empty response?}
+    NX -->|no| O[Cache Log<br/>token usage → Sheets]
+    NX -->|yes| NY[Retry (max 2×)<br/>Attempt count → Attempt limit]
+    NY -.->|retry| M
+    NY -->|still empty| NZ[Fallback notice<br/>Telegram warning]
     O --> P[Send Telegram Message<br/>reply to user]
     P --> Q[Update Document<br/>append Aura response to Live Diary]
     Q --> R[Update Row in Sheet<br/>last active timestamp]
@@ -95,22 +99,22 @@ flowchart TD
 | **Code (MIME fix)** | Fixes audio MIME type | Telegram sends voice as `audio/ogg`; explicitly sets before sending to Gemini |
 | **Gemini Transcribe** | Speech-to-text | Uses Gemini's multimodal capability (no separate Whisper API needed) |
 | **Merge** | Combines all input paths | 3 inputs: image+caption, transcribed voice, plain text |
-| **AI Agent** | Core LLM call | Direct HTTP to Gemini API with full system prompt + diary + profile + user message. Supports `pro:` prefix for model switching |
+| **AI Agent** | Core LLM call | Direct HTTP request to the DeepSeek API (`/chat/completions`) with full system prompt + diary + profile + user message. Reply is read from `choices[0].message.content` |
 | **Cache Log** | Token usage tracking | Records timestamp, model, tokens, and cache hit/miss to Google Sheets |
 | **Activity Sheet** | Last active date | Updates a row so the proactive workflow knows when the user last interacted |
 
-### Model selection
+### Model & empty-response resilience
 
-The AI Agent node dynamically selects the Gemini model based on a user prefix:
+The core chat call is a plain HTTP request to the **DeepSeek API** (`deepseek-v4-pro`). The reply is validated before it goes anywhere else:
 
-- **`pro: Hey, let's talk about my career...`** → `gemini-2.5-pro` (deeper reasoning)
-- **No prefix** → `gemini-2.5-flash` (faster, cheaper)
+- **`Empty response check`** (If) — passes when `choices[0].message.content` is non-empty
+- **`Attempt count` / `Attempt limit`** — on an empty reply the workflow loops back and retries the model call (up to 2 extra attempts)
+- **`Fallback notice`** — if all 3 attempts come back empty, a Telegram warning is sent instead of failing silently
 
-This is implemented in the `jsonBody` expression:
+The validation expression:
+
 ```javascript
-$('Merge').item.json.final_text.toLowerCase().startsWith('pro:') 
-  ? 'gemini-2.5-pro' 
-  : 'gemini-2.5-flash'
+(($json.choices?.[0]?.message?.content ?? '').toString().trim())
 ```
 
 ---
@@ -195,41 +199,38 @@ The core purpose of the weekly maintenance workflow is **cost control**. Without
 
 - The Master Diary would grow by ~2,000-5,000 tokens per day
 - After one month, every API call would include ~60,000-150,000 tokens of history
-- At Gemini Flash pricing, a single conversation could consume 10-20x more input tokens than necessary
+- With a large static context, every call would consume 10-20x more input tokens than necessary
 - After 6 months, the diary alone would dominate API costs
 
 The rotation strategy keeps per-message token counts **flat and predictable** regardless of how long Aura has been running.
 
 ---
 
-## Cost Efficiency & Gemini Context Caching
+## Cost Efficiency & Context Caching
 
-Aura's prompt architecture is designed to work with **Gemini's automatic context caching**, which gives a ~90% discount on repeated prompt prefixes. However, the cache has important limitations.
+Aura's prompt architecture is designed to work with **DeepSeek's automatic prefix caching**, which gives a ~10× discount on cached input tokens. The cache persists for hours, so follow-up messages in a session usually hit it.
 
 ### How caching works (and when it doesn't)
 
-Gemini's context cache is **short-lived** — typically lasting **5–10 minutes** between requests, sometimes longer but never guaranteed. This means:
+The DeepSeek prefix cache keeps recent prompt prefixes for **hours**, so follow-up messages in a session usually hit it. This means:
 
-- The cache is useful during **rapid back-and-forth exchanges** (e.g., an active therapy session where messages are exchanged every minute)
-- For **most real-world usage** — checking in a few times throughout the day — every message starts fresh with **no cache hit**
+- Back-to-back exchanges measured at **~98% cache-hit rate** on a ~277k-token context
+- After a longer pause, the first message re-processes the full context at standard input pricing
 - The Cache Log sheet exists specifically to monitor this: it tracks `HIT / MISS` on every API call, giving real visibility into caching behavior
 
 **Prompt structure (designed for cache potential):**
 
 ```
 ┌──────────────────────────────────┐
-│ SYSTEM INSTRUCTION (persona,      │
-│ rules, tone, protocol)           │  ← STATIC → Cached IF within 5-10 min window
-│ ~2,000 tokens                    │
+│ SYSTEM INSTRUCTION (persona,     │
+│ rules, tone, protocol)           │  ← STATIC → cached after the first call
 ├──────────────────────────────────┤
-│ USER PROFILE (goals, patterns)   │  ← RARELY CHANGES → Same cache window
-│ ~500 tokens                      │
+│ USER PROFILE (goals, patterns)   │  ← RARELY CHANGES → cached
 ├──────────────────────────────────┤
-│ MASTER DIARY (conversation log)   │  ← DYNAMIC → Always full price
-│ ~1,000-3,000 tokens              │     Reset weekly to stay manageable
+│ MASTER DIARY (conversation log)  │  ← GROWS BY APPENDING → previous content
+│                                  │     stays cached; only new lines pay full price
 ├──────────────────────────────────┤
-│ LATEST USER MESSAGE              │  ← DYNAMIC → Full price (small)
-│ ~50-200 tokens                   │
+│ LATEST USER MESSAGE              │  ← NEW → full price (small)
 └──────────────────────────────────┘
 OUTPUT: Aura's response (~200-500 tokens, standard output pricing)
 ```
@@ -241,23 +242,23 @@ OUTPUT: Aura's response (~200-500 tokens, standard output pricing)
 3. **Master Diary is the only growing element** — and it's reset weekly to prevent unbounded token growth
 4. **Cache hit/miss is tracked** — the Cache Log Google Sheet records every API call, so you can see exactly when caching helps and when it doesn't
 
-> 💡 **Reality check:** For a bot checked 3-5 times throughout the day with short exchanges, expect **most calls to be cache misses**. Caching is a nice bonus during active conversations, not a primary cost strategy. The weekly diary rotation and `pro:` prefix are the real cost controls.
+> 💡 **Reality check:** Measured on this setup: ~98% of input tokens are served from cache — the first message after a long pause re-processes everything. Caching does the heavy lifting; the weekly diary rotation keeps the total context (and the cost of a cache miss) from growing unbounded.
 
 ### Real-world costs
 
-Costs depend heavily on language, message length, and conversation frequency. Czech (and other non-English languages) typically consume **1.5–2x more tokens** per message than English. Based on real usage:
+Costs depend heavily on language, message length, and conversation frequency. Czech (and other non-English languages) typically consume **1.5–2x more tokens** per message than English. Measured on this setup (Czech, ~277k-token context, ~98% served from cache):
 
 | Usage pattern | Est. monthly cost | Real-world example |
 |---|---|---|
-| Light (a few messages/day) | **$8–12** (~200–300 CZK) | Quick check-ins, short reflections |
-| Moderate (active daily use) | **$15–20** (~350–500 CZK) | Regular therapeutic conversations, voice messages, image analysis |
-| Heavy (multiple long sessions/day) | **$30–40** (~750–1,000 CZK) | Deep sessions with `pro:` model, multi-modal input, growing diary before rotation |
+| Light (a few messages/day) | **$1–3** (~25–70 CZK) | Quick check-ins, short reflections |
+| Moderate (active daily use) | **$4–8** (~90–185 CZK) | Regular therapeutic conversations, voice messages, image analysis |
+| Heavy (multiple long sessions/day) | **$10–15** (~230–345 CZK) | Deep sessions, multi-modal input, growing diary before rotation |
 
 Factors that increase cost:
 - **Language** — Czech/German/Slavic languages use more tokens than English
 - **Voice messages** — audio transcription adds tokens
 - **Image analysis** — vision API calls cost extra
-- **`pro:` model** — Gemini Pro is more expensive per token
+- **Output length** — output tokens are priced ~20× higher than cached input tokens
 - **Diary growth** — end-of-week messages cost more than Monday messages (before rotation)
 
 ---
@@ -277,7 +278,7 @@ Factors that increase cost:
 | Sheet | Columns | Purpose |
 |---|---|---|
 | **Activity Sheet** | `Last active date`, `row_number` | Tracks when the user last interacted. Checked daily by proactive workflow. |
-| **Cache Log** | `Timestamp`, `Model`, `Total Tokens`, `Cached tokens`, `HIT / MISS` | API usage analytics. Tracks Gemini context caching efficiency. |
+| **Cache Log** | `Timestamp`, `Model`, `Total Tokens`, `Cached tokens`, `HIT / MISS` | API usage analytics. Tracks context-caching efficiency. |
 
 ---
 
@@ -285,6 +286,7 @@ Factors that increase cost:
 
 - **Telegram send failures:** The `Send a text message` nodes have `onError: continueRegularOutput` — if a message fails to send (e.g., user blocked the bot), the workflow continues without breaking.
 - **Retry on fail:** Critical nodes have `retryOnFail: true` enabled.
+- **Empty model responses:** The chat workflow validates every reply (`Empty response check`). On an empty response it retries up to 2 more times (`Attempt count` → `Attempt limit`), then sends a Telegram fallback notice instead of failing silently.
 - **Google Docs "Copy history" node:** Uses `onError: continueRegularOutput` to prevent the weekly maintenance from failing if the copy step encounters an issue.
 - **No dead letter queue:** As a personal bot, failed interactions are visible in n8n's execution log for manual review.
 
@@ -293,7 +295,7 @@ Factors that increase cost:
 ## Security
 
 - **Credentials:** All API keys, OAuth tokens, and the Telegram bot token are stored in n8n's encrypted credential store. They are **never exported** in workflow JSONs.
-- **No external access:** All documents and sheets are in the user's personal Google Drive. No data leaves the user's Google account (except the Gemini API calls).
+- **No external access:** All documents and sheets are in the user's personal Google Drive. No data leaves the user's Google account, except the LLM API calls (DeepSeek for chat, Google Gemini for vision & transcription).
 - **Chat ID scoping:** The Telegram chat ID is hardcoded in the workflow, preventing other users from interacting with the bot.
 - **Bot token in HTTP URLs:** Two `HTTP Request` nodes for Telegram file download include the bot token in the URL. These are replaced with `YOUR_BOT_TOKEN` in the public repository.
 

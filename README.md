@@ -7,7 +7,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
   <img src="https://img.shields.io/badge/platform-n8n-orange.svg" alt="Platform: n8n">
-  <img src="https://img.shields.io/badge/AI-Gemini%202.5%20Flash-brightgreen.svg" alt="AI: Gemini">
+  <img src="https://img.shields.io/badge/AI-DeepSeek%20V4%20Pro-4D6BFE.svg" alt="AI: DeepSeek">
   <img src="https://img.shields.io/badge/messaging-Telegram-blue.svg" alt="Messaging: Telegram">
 </p>
 
@@ -17,7 +17,7 @@
 
 Aura is a personal AI coach and therapeutic companion that lives in Telegram. Built entirely as **n8n workflows** (no custom code server needed), she provides:
 
-- 🧠 **Intelligent conversations** — multi-modal chat (text, voice, images) powered by Google Gemini
+- 🧠 **Intelligent conversations** — multi-modal chat (text, voice, images) powered by DeepSeek V4 Pro, with Gemini handling vision and voice transcription
 - 🌅 **Proactive morning check-ins** — notices when you've been away and gently reaches out
 - 📊 **Weekly growth summaries** — condenses your week's conversations into an insightful narrative
 
@@ -47,10 +47,10 @@ This makes long-term therapeutic work nearly impossible. You can't build on insi
 
 ### Additional architectural benefits
 
-- **No vendor lock-in** — all your conversations are plain text in Google Docs, not trapped in a proprietary chat interface. You own your data and can switch AI providers (Gemini → Claude → GPT) without losing context.
+- **No vendor lock-in** — all your conversations are plain text in Google Docs, not trapped in a proprietary chat interface. You own your data and can switch AI providers (DeepSeek → Claude → GPT) without losing context.
 - **Multi-modal memory** — voice messages are transcribed, images are described. Everything becomes searchable text in the diary.
 - **Cost-aware persistence** — the weekly diary rotation keeps token usage bounded. Without it, a 6-month diary would cost more to process than the therapy conversation itself.
-- **Data survives provider outages** — all conversation history lives in your Google Drive, independent of any AI service. If Gemini is down, your history isn't lost — you can pick up with a different provider or review past sessions while waiting for recovery.
+- **Data survives provider outages** — all conversation history lives in your Google Drive, independent of any AI service. If DeepSeek is down, your history isn't lost — you can pick up with a different provider or review past sessions while waiting for recovery.
 - **Human-readable archive** — the Full History document is a chronological narrative you can read, search, and export. It's not a black box.
 
 ---
@@ -59,7 +59,7 @@ This makes long-term therapeutic work nearly impossible. You can't build on insi
 
 | Feature | Workflow | Trigger | Description |
 |---|---|---|---|
-| 💬 **Smart Chat** | `aura-chat` | Telegram message | Multi-modal conversations with context from your diary & profile. Handles text, voice memos, and images. |
+| 💬 **Smart Chat** | `aura-chat` | Telegram message | Multi-modal conversations with context from your diary & profile. Handles text, voice memos, and images. Includes empty-response retry (up to 3 attempts) and a Telegram fallback notice. |
 | ☀️ **Proactive Check-in** | `aura-proactive` | Daily schedule | Checks your last active date. If you haven't messaged in 2+ days, sends a personalized nudge referencing your last conversation. |
 | 📝 **Weekly Rotation** | `aura-weekly-maintenance` | Weekly schedule | Processes the week's conversations: (1) generates a deep psychological summary for the **Full History** archive, (2) **resets the Master Diary** to keep per-message token costs stable, (3) sends a user-friendly recap via Telegram. Designed primarily as a **token cost control mechanism** — without it, the growing diary would make every message progressively more expensive. |
 
@@ -86,7 +86,7 @@ Aura runs entirely on **n8n** — a self-hosted workflow automation platform. No
 │                         │                           │
 │   Live Diary ◄─────────▼──────── User Profile       │
 │                         │                           │
-│                    AI Agent (Gemini)                 │
+│              AI Agent (DeepSeek V4 Pro)              │
 │                         │                           │
 │                    Cache Log (Sheets)                │
 │                         │                           │
@@ -121,25 +121,21 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed node-by-node breakdown 
 
 ## 💰 Cost Efficiency & Context Caching
 
-Aura is designed with cost efficiency in mind — but real-world LLM usage isn't free. With a daily habit of therapeutic conversations, expect to spend roughly **$8–20/month** (200–500 CZK). Heavy usage months can reach **$40** (1,000 CZK). Three design decisions help keep this in check:
+Aura is designed with cost efficiency in mind — but real-world LLM usage isn't free. The chat runs on DeepSeek V4 Pro with automatic prompt caching: at a measured ~98% cache-hit rate, a typical message costs **$0.01–0.02** (~0.25–0.5 CZK). A daily habit of a few messages lands around **$1–5/month**; heavy months stay well under $10. Three design decisions help keep this in check:
 
-### 1. Gemini Context Caching (best-effort)
+### 1. DeepSeek Context Caching (automatic)
 
-Google Gemini automatically caches repeated prompt prefixes, giving a ~90% discount on cached tokens. However, **this cache is short-lived** — typically lasting only **5–10 minutes** between requests (sometimes longer, but not guaranteed). This means:
+DeepSeek automatically caches repeated prompt prefixes and charges ~10× less for cached input tokens. Unlike Gemini's short-lived cache, DeepSeek's cache persists for hours — so follow-up messages in a session usually hit it:
 
-- The system prompt is cached **only during rapid back-and-forth exchanges** — not on the first message of a session or after a pause
-- For most real-world usage (checking in a few times a day), every message starts fresh with **no cache hit**
+- Measured on this setup (~277k-token context per message), back-to-back messages run at **~98% cache-hit rate**
+- The first message after a longer pause re-processes the full context at standard input pricing
 - A dedicated **Cache Log** Google Sheet tracks every API call with `HIT / MISS`, token counts, and model used — specifically to monitor how often caching actually kicks in
 
-The prompt is still structured with the static system prompt first to maximize cache potential when rapid exchanges do happen, but caching is treated as a bonus, not a guarantee.
+The prompt is structured with the static system prompt first to maximize cache potential.
 
-### 2. `pro:` Prefix for Model Selection
+### 2. Model Setup — V4 Pro for Chat
 
-The user controls which model to use per message:
-- **Default** → `gemini-2.5-flash` (faster, almost free)
-- **`pro:` prefix** → `gemini-2.5-pro` (deeper reasoning, only when needed)
-
-This avoids paying Pro prices for simple "how are you" exchanges.
+The chat uses a fixed **`deepseek-v4-pro`** model via a plain HTTP request to DeepSeek's `/chat/completions` endpoint. Vision analysis and voice transcription use **Gemini 2.5 Flash** — cheap multimodal calls that don't need the big model.
 
 ### 3. Weekly Diary Rotation
 
@@ -169,7 +165,8 @@ Aura uses Google Docs as a lightweight, free document store. Each document has a
 ## Tech Stack
 
 - **[n8n](https://n8n.io)** — Workflow automation (self-hosted)
-- **[Google Gemini](https://ai.google.dev)** — LLM for chat, vision analysis, and speech-to-text
+- **[DeepSeek](https://platform.deepseek.com)** — LLM for the main chat (V4 Pro via the native API)
+- **[Google Gemini](https://ai.google.dev)** — vision analysis and speech-to-text (Gemini 2.5 Flash), plus the proactive check-in message (Gemini 3 Flash)
 - **[Telegram Bot API](https://core.telegram.org/bots/api)** — Messaging interface
 - **[Google Docs](https://docs.google.com)** — Lightweight document store (diary, user profile, full history)
 - **[Google Sheets](https://sheets.google.com)** — Activity tracking and API cache logging
@@ -188,6 +185,7 @@ Aura uses Google Docs as a lightweight, free document store. Each document has a
   - Google Sheets API
   - Google Drive API
   - Gemini API (Generative Language API)
+- A **DeepSeek API key** ([platform.deepseek.com](https://platform.deepseek.com)) for the main chat model
 - **Google OAuth 2.0 credentials** (for Docs/Sheets/Drive)
 
 ### Quick Setup
@@ -201,6 +199,7 @@ Aura uses Google Docs as a lightweight, free document store. Each document has a
    - Google Docs OAuth2
    - Google Sheets OAuth2
    - Google Drive OAuth2
+   - DeepSeek API — as an **HTTP Bearer Auth** credential (chat) and a native **DeepSeek** credential (weekly)
 
 3. **Create your Google documents**:
    - Create a Google Doc for the Live Diary → copy its ID → set `YOUR_LIVE_DIARY_DOC_ID`
@@ -234,13 +233,13 @@ The chat workflow handles multiple input types:
 - **Photos** → Gemini Vision analysis → merged with caption as context
 - **Voice messages** → Downloaded via Telegram API → transcribed via Gemini → merged as text
 - **Text** → Directly merged with diary and profile context
-- **`pro:` prefix** — If the user starts a message with `pro:`, Gemini 2.5 Pro is used instead of Flash (for deeper reasoning)
+- **Resilience** — If the model returns an empty response, the workflow retries the call (up to 3 attempts total) and sends a Telegram fallback notice if it still fails
 
 ### Context Window
 
 Every message to the AI includes:
 
-1. **System Prompt** — Aura's persona, rules, and tone (static → cached by Gemini)
+1. **System Prompt** — Aura's persona, rules, and tone (static → cached by DeepSeek)
 2. **User Profile** — Stable facts, goals, and patterns (rarely changes → cached)
 3. **Master Diary** — The current week's conversation log (dynamic, grows until reset)
 4. **The latest user message** — text, transcribed voice, or image description
@@ -255,13 +254,13 @@ The system prompts are embedded in the workflow JSON files. To customize Aura's 
 
 1. Open the workflow in n8n editor
 2. Find the **AI Agent** node
-3. Edit the `system_instruction` text inside the `jsonBody` parameter
+3. Edit the system prompt inside the `jsonBody` parameter (the first `messages` entry with `role: system`)
 
 Key customization points:
 - The user's name, context, and background
 - The three internal states (you can add, remove, or rename them)
 - Communication rules and tone
-- The `pro:` prefix behavior (you can change the trigger or models used)
+- The empty-response retry behaviour (`Empty response check` → `Attempt count` → `Attempt limit` → `Fallback notice` nodes)
 
 ---
 
@@ -275,12 +274,11 @@ aura-therapist-bot/
 │   ├── aura-chat.json              # Main conversational workflow
 │   ├── aura-proactive.json         # Daily proactive check-in
 │   └── aura-weekly-maintenance.json # Weekly summary + diary rotation
-├── docs/
-│   ├── ARCHITECTURE.md             # Detailed architecture & node breakdown
-│   ├── SETUP.md                    # Step-by-step setup guide
-│   └── images/
-│       └── (add your own screenshots here)
-└── sanitize.py                     # Script used to clean personal data (dev reference)
+└── docs/
+    ├── ARCHITECTURE.md             # Detailed architecture & node breakdown
+    ├── SETUP.md                    # Step-by-step setup guide
+    └── images/
+        └── (add your own screenshots here)
 ```
 
 ---
@@ -292,9 +290,9 @@ Aura runs on **your own infrastructure**. No third-party service has access to y
 - Your n8n instance
 - Your Google Drive (diary, profile)
 - Your Google Sheets (activity log, API cache)
-- Direct API calls to Gemini (your own API key)
+- Direct API calls to DeepSeek (chat) and Google Gemini (vision & transcription) — with your own API keys
 
-The Telegram bot token, Google credentials, and Gemini API key are stored **encrypted** in n8n's credential store — they never appear in the exported workflow JSONs.
+The Telegram bot token, Google credentials, and LLM API keys are stored **encrypted** in n8n's credential store — they never appear in the exported workflow JSONs.
 
 ---
 
@@ -304,10 +302,10 @@ The Telegram bot token, Google credentials, and Gemini API key are stored **encr
 A: n8n provides visual workflow orchestration, built-in credentials management, error handling, retries, and scheduling — all without writing server code. It's perfect for AI agent pipelines.
 
 **Q: Why Google Docs as a database?**
-A: For a personal single-user bot, Google Docs is free, accessible from anywhere, and natively understood by Gemini's long-context window. No need for a vector database at this scale.
+A: For a personal single-user bot, Google Docs is free, accessible from anywhere, and easily consumed by the model's long-context window. No need for a vector database at this scale.
 
 **Q: Can I use a different LLM?**
-A: Yes! Replace the Gemini nodes with OpenAI, Anthropic, or any other LLM supported by n8n. The architecture stays the same.
+A: Yes! The chat calls the LLM over plain HTTP (`/chat/completions`), so any OpenAI-compatible API works by changing the URL, model name, and key. The vision/transcription nodes would need a swap too.
 
 **Q: How do I change the proactive check-in timing?**
 A: Edit the Schedule Trigger node in `aura-proactive.json` — you can change the hour, add multiple times, or switch to a different schedule.
