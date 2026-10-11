@@ -270,8 +270,10 @@ Key customization points:
 aura-therapist-bot/
 ├── README.md
 ├── LICENSE
+├── CHANGELOG.md                    # Model-switch and fix history
 ├── workflows/
-│   ├── aura-chat.json              # Main conversational workflow
+│   ├── aura-chat.json              # Main conversational workflow (DeepSeek)
+│   ├── aura-chat-gemini-2026-09-09.json # Pre-DeepSeek rollback export
 │   ├── aura-proactive.json         # Daily proactive check-in
 │   └── aura-weekly-maintenance.json # Weekly summary + diary rotation
 └── docs/

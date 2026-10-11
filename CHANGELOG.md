@@ -2,6 +2,44 @@
 
 All notable changes to the Aura workflow collection are documented here.
 
+## 2026-10-11 — Aura chat: empty-response retry + plain-text reply fixes
+
+### Added
+
+- **Empty response check → Attempt count → Attempt limit → Fallback notice** — the chat workflow
+  now validates every model reply. On an empty response it retries the model call (up to 3 attempts
+  total); after the third empty reply it sends a Telegram warning instead of failing silently.
+- System prompt instruction: *"Always write a full reply. Never send an empty message."*
+
+### Changed
+
+- **Send a text message1**: HTML `parse_mode` removed — replies are sent as plain text, so stray
+  formatting characters can no longer make the Telegram call fail.
+- All three workflow exports were regenerated from the live instance and fully re-sanitized
+  (`aura-chat.json`, `aura-proactive.json`, `aura-weekly-maintenance.json`). The previous
+  proactive and weekly exports were not valid JSON (unescaped multi-line prompts).
+
+### Why
+
+- DeepSeek occasionally returns **HTTP 200 with empty `content`** (reasoning-only or filtered
+  output). The Telegram node then failed with *"message text is empty"* while the workflow still
+  recorded a success — no reply reached the user.
+- Observed in 2 of the last 25 runs (latest: 2026-10-11 15:11 CEST). Re-sending the same message
+  usually passes; the retry loop now does that automatically.
+- Verified against a mock API: 4/4 scenarios (empty-then-recovered, always-empty, no-error,
+  recovery on the third attempt).
+
+### Rollback
+
+- The retry is additive — the model call itself is unchanged. To drop it, restore `aura-chat.json`
+  from Git (`b67ea7b`) and re-import in n8n.
+
+### Repo hygiene
+
+- Gemini rollback export (`aura-chat-gemini-2026-09-09.json`): the personal prompt was replaced
+  with the generic English prompt; personal IDs (documents, sheets, chat id, bot token) replaced
+  with `YOUR_*` placeholders.
+
 ## 2026-09-10 (3) — Aura chat: model switch DeepSeek Flash → DeepSeek V4 Pro
 
 - **AI Agent** node: request body `"model"`: `deepseek-flash` → `deepseek-v4-pro`
