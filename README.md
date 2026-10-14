@@ -100,8 +100,8 @@ Aura runs entirely on **n8n** — a self-hosted workflow automation platform. No
 │  aura-proactive (daily, 10:00)                      │
 │                                                     │
 │  Schedule → Read Activity Sheet → Check days        │
-│     └─ If >2 days → Read Diary → AI drafts nudge    │
-│        └─ Send Telegram message                     │
+│     └─ If >2 days → Diary/profile → AI nudge        │
+│        └─ Send Telegram message (plain text)        │
 └─────────────────────────────────────────────────────┘
                │
                ▼

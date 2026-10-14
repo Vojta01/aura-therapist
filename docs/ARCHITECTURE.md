@@ -133,9 +133,13 @@ flowchart TD
     C --> D{If<br/>days > 2?}
     D -->|Yes| E[Google Docs<br/>Get Live Diary]
     D -->|No| Z[Stop — user is active]
-    E --> F[AI Agent<br/>draft personalized nudge]
+    E --> E2{Empty diary check<br/>content empty?}
+    E2 -->|No| F[AI Agent<br/>draft personalized nudge]
+    E2 -->|Yes| P[Google Docs<br/>Get User Profile]
+    P --> Q[Code<br/>Build context from the last<br/>Weekly Summary block]
+    Q --> F
     F --> G[Google Docs<br/>append nudge to Live Diary]
-    G --> H[Telegram<br/>send message to user]
+    G --> H[Telegram<br/>send plain-text message]
 ```
 
 ### Key details
@@ -146,8 +150,10 @@ flowchart TD
 | **Get last active** | Activity check | Reads the "Last active date" from the Activity Sheet |
 | **Code** | Day calculation | Computes `(now - lastActive) / (1000 * 60 * 60 * 24)`. Handles empty cells (never active → force trigger) |
 | **If** | Threshold gate | Only proceeds if `differenceInDays > 2` |
-| **AI Agent** | Nudge generation | Reads the Live Diary, identifies the most relevant unresolved topic, drafts a 2-3 sentence check-in |
-| **Telegram** | Delivery | Sends the drafted message to the user's chat ID |
+| **Empty diary check** | Fallback gate | If the diary content is empty (just `-` after the weekly rotation), the profile fallback is used instead |
+| **Get User Profile / Build context** | Fallback context | Reads the User Profile and passes the latest `--- Weekly Summary` block (up to 24,000 chars) to the AI Agent |
+| **AI Agent** | Nudge generation | Reads the Live Diary (or the profile fallback), identifies the most relevant unresolved topic, drafts a 2-3 sentence check-in |
+| **Telegram** | Delivery | Sends the drafted message as plain text (markdown characters stripped, no n8n attribution footer) |
 
 ### Nudge philosophy
 

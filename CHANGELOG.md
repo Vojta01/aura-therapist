@@ -2,6 +2,44 @@
 
 All notable changes to the Aura workflow collection are documented here.
 
+## 2026-10-14 — Proactive check-in: plain-text delivery + empty-diary fallback
+
+### Fixed
+
+- **Send a text message**: the check-in text is now stripped of markdown characters (asterisks,
+  underscores, backticks, square brackets) before sending. The n8n Telegram node always sends
+  `parse_mode=Markdown` (hardcoded default — `appendAttribution:false` does not disable it), so an
+  unbalanced `*` in the model output made Telegram reject the message with `400 can't parse
+  entities` — the nudge never arrived.
+- **Update a document**: the same sanitized text is what gets appended to the Live Diary.
+
+### Added
+
+- **Empty diary check → Get Aura_user_profile → Build context** — the weekly rotation resets the
+  Live Diary to `-`. If a check-in fires while the diary is empty, the workflow now uses the latest
+  part of the User Profile (last `--- Weekly Summary` block, capped at 24,000 chars) as the agent's
+  context instead of sending a context-free nudge.
+
+### Changed
+
+- **AI Agent** system prompt: markdown stars removed from the examples; new format rules
+  (message only — no samples, no apologies; plain text only; use the profile context when the
+  diary is empty).
+- **Send a text message**: `appendAttribution` disabled — no "sent automatically with n8n" footer.
+
+### Why
+
+- 2026-10-14 run: Sunday's rotation had emptied the diary; the model improvised a "sample message"
+  containing `***` and `**bold**`; the odd number of stars broke Markdown parsing at byte offset
+  323 of the outgoing text. The Telegram send failed while all upstream nodes (including the diary
+  append) had already run.
+
+### Repo hygiene
+
+- `aura-proactive.json` regenerated from the live instance (valid strict JSON, zero forbidden
+  substrings, zero Czech diacritics). Chat and weekly exports were diffed against fresh live dumps
+  and are unchanged since 2026-10-11.
+
 ## 2026-10-11 — Aura chat: empty-response retry + plain-text reply fixes
 
 ### Added
