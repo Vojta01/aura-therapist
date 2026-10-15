@@ -2,6 +2,26 @@
 
 All notable changes to the Aura workflow collection are documented here.
 
+## 2026-10-15 — Proactive check-in: empty-diary condition fix
+
+### Fixed
+
+- **Empty diary check**: the condition's left value was stored without the `=` expression prefix.
+  n8n received the raw `{{ ... }}` template instead of an evaluated value, and the strict type check
+  expected a boolean — the node failed with `Wrong type: ... is a string but was expecting a boolean`
+  and the run stopped before sending anything. The value now uses the expression form `={{ ... }}`
+  (the same pattern as the days-since-activity gate), so it evaluates to a real boolean.
+
+### Why
+
+- 2026-10-15 run: the diary was empty again after the weekly rotation, and the empty-diary path ran
+  for the first time — that is how the faulty condition surfaced. No message was sent.
+
+### Repo hygiene
+
+- Only `aura-proactive.json` was regenerated (one condition + versionId changed); chat and weekly
+  exports re-verified unchanged.
+
 ## 2026-10-14 — Proactive check-in: plain-text delivery + empty-diary fallback
 
 ### Fixed

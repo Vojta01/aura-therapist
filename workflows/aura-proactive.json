@@ -389,7 +389,7 @@
           "conditions": [
             {
               "id": "e557eb54-913a-4c1e-baec-f5d1d987db86",
-              "leftValue": "{{ ($json.content ?? '').replace(/[-\\s]/g, '').length === 0 }}",
+              "leftValue": "={{ ($json.content ?? '').replace(/[-\\s]/g, '').length === 0 }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -449,5 +449,5 @@
     "callerPolicy": "workflowsFromSameOwner"
   },
   "tags": [],
-  "versionId": "61bb5868-6e1c-45bd-aec6-674127c3df5f"
+  "versionId": "ae5e95e2-f6f1-46bd-9afb-cfda96f91c15"
 }
