@@ -426,7 +426,13 @@
       "name": "Get Aura_user_profile",
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 3000
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "YOUR_GOOGLE_DOCS_CREDENTIAL_ID",
+          "name": "Google Docs account"
+        }
+      }
     },
     {
       "parameters": {
@@ -449,5 +455,5 @@
     "callerPolicy": "workflowsFromSameOwner"
   },
   "tags": [],
-  "versionId": "ae5e95e2-f6f1-46bd-9afb-cfda96f91c15"
+  "versionId": "044bedc2-80f3-4f19-87e3-561b475d8113"
 }

@@ -2,6 +2,22 @@
 
 All notable changes to the Aura workflow collection are documented here.
 
+## 2026-10-16 — Proactive check-in: profile node credentials + first verified run
+
+### Fixed
+
+- **Get Aura_user_profile**: the node was created without its `credentials` block during the
+  2026-10-14 rework. It surfaced only when the node first executed — the run died with
+  `Node does not have any credentials set`. It now shares the `googleDocsOAuth2Api` credential
+  with the other Google Docs nodes.
+
+### Verified
+
+- End-to-end test on a temporary copy (1-minute trigger, deleted afterwards): all nodes green.
+  The first run exercised the empty-diary branch (profile context → nudge → diary append →
+  Telegram delivery); the follow-up run exercised the direct branch. Both check-in messages
+  were delivered.
+
 ## 2026-10-15 — Proactive check-in: empty-diary condition fix
 
 ### Fixed
