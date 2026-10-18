@@ -68,13 +68,21 @@
       ]
     },
     "Google Gemini Chat Model": {
-      "main": []
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update a document": {
       "main": [
         [
           {
-            "node": "Send a text message",
+            "node": "Prepare message",
             "type": "main",
             "index": 0
           }
@@ -115,6 +123,28 @@
         [
           {
             "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare message": {
+      "main": [
+        [
+          {
+            "node": "Split message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split message": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
             "type": "main",
             "index": 0
           }
@@ -355,8 +385,8 @@
     },
     {
       "parameters": {
-        "chatId": "YOUR_TELEGRAM_CHAT_ID",
-        "text": "={{ ($('AI Agent').item.json.output ?? '').replace(/[*_`\\[\\]]/g, '').trim() }}",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
         "additionalFields": {
           "appendAttribution": false
         }
@@ -364,7 +394,7 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1488,
+        1824,
         -16
       ],
       "id": "dbe5b2fb-f80c-48cb-8f44-a5bd3e88160d",
@@ -446,6 +476,48 @@
       ],
       "id": "fcd56ad8-9f86-4bbf-8ffd-4ee8cd9c7c25",
       "name": "Build context"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d5f66dee-9f6e-4b41-bb68-31261d5118d3",
+              "name": "content",
+              "value": "={{ ($('AI Agent').item.json.output ?? '').replace(/[*_`\\[\\]]/g, '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "bcd7d2a2-46f8-453f-8ce4-5e8455615c4f",
+              "name": "chatId",
+              "value": "YOUR_TELEGRAM_CHAT_ID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        -16
+      ],
+      "id": "34d2caa1-3282-4756-8969-d384120332d8",
+      "name": "Prepare message"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split a long message into Telegram-safe chunks (<= LIMIT chars).\n// Prefers paragraph (blank line) > line > sentence > word boundaries.\nconst LIMIT = 4000;\nconst first = $input.first().json;\nconst content = (first.content ?? '').toString().trim();\nconst chatId = first.chatId;\n\nfunction splitText(text, limit) {\n  if (text.length <= limit) return [text];\n  const chunks = [];\n  let remaining = text;\n  while (remaining.length > limit) {\n    const head = remaining.slice(0, limit);\n    let cut = -1;\n    for (const sep of ['\\n\\n', '\\n', '. ', '! ', '? ', ' ']) {\n      const idx = head.lastIndexOf(sep);\n      if (idx > Math.floor(limit / 2)) {\n        cut = idx + sep.length;\n        break;\n      }\n    }\n    if (cut <= 0) {\n      cut = limit;\n      const cc = remaining.charCodeAt(cut - 1);\n      if (cc >= 0xd800 && cc <= 0xdbff) cut -= 1; // do not split a surrogate pair (emoji)\n    }\n    chunks.push(remaining.slice(0, cut).trim());\n    remaining = remaining.slice(cut).trim();\n  }\n  if (remaining.length > 0) chunks.push(remaining);\n  return chunks;\n}\n\nconst chunks = splitText(content, LIMIT);\nreturn chunks.map((text) => ({ json: { text, chatId } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        -16
+      ],
+      "id": "7af28213-a264-4b7b-87b8-5fec61b89b81",
+      "name": "Split message"
     }
   ],
   "pinData": {},
@@ -455,5 +527,5 @@
     "callerPolicy": "workflowsFromSameOwner"
   },
   "tags": [],
-  "versionId": "044bedc2-80f3-4f19-87e3-561b475d8113"
+  "versionId": "278a556c-fdca-442f-9435-82fb3cfcb301"
 }

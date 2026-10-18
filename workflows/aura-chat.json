@@ -23,17 +23,6 @@
         ]
       ]
     },
-    "Send a text message1": {
-      "main": [
-        [
-          {
-            "node": "Update a document1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Analyze an image": {
       "main": [
         [
@@ -206,7 +195,12 @@
       "main": [
         [
           {
-            "node": "Send a text message1",
+            "node": "Prepare message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update a document1",
             "type": "main",
             "index": 0
           }
@@ -254,6 +248,28 @@
         [
           {
             "node": "Fallback notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare message": {
+      "main": [
+        [
+          {
+            "node": "Split message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split message": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
             "type": "main",
             "index": 0
           }
@@ -325,8 +341,8 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
-        "text": "={{ $('AI Agent').item.json.choices[0].message.content }}",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
         "additionalFields": {
           "appendAttribution": false
         }
@@ -334,13 +350,12 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1712,
+        2168,
         0
       ],
       "id": "ec5ca41a-7904-48c5-829e-98b4b6358bed",
       "name": "Send a text message1",
       "webhookId": "7c784b24-9e4f-4349-a24a-e63be5e60f50",
-      "retryOnFail": true,
       "credentials": {
         "telegramApi": {
           "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
@@ -365,8 +380,8 @@
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
       "position": [
-        1888,
-        0
+        2040,
+        176
       ],
       "id": "cfb65b19-892b-4306-b269-8fad2ace9424",
       "name": "Update a document1",
@@ -574,8 +589,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        2032,
-        0
+        2264,
+        176
       ],
       "id": "6e2e69f3-be44-4af5-93d3-45bfc53049e8",
       "name": "Update row in sheet",
@@ -1039,6 +1054,48 @@
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "41528b89-3512-45cb-b04b-425bc15dad94",
+              "name": "content",
+              "value": "={{ $('AI Agent').item.json.choices[0].message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "d898b8e0-77b5-4e81-9947-b5a9d0a7ef64",
+              "name": "chatId",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1720,
+        0
+      ],
+      "id": "b6963dd5-7915-4482-b773-ac575442c804",
+      "name": "Prepare message"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split a long message into Telegram-safe chunks (<= LIMIT chars).\n// Prefers paragraph (blank line) > line > sentence > word boundaries.\nconst LIMIT = 4000;\nconst first = $input.first().json;\nconst content = (first.content ?? '').toString().trim();\nconst chatId = first.chatId;\n\nfunction splitText(text, limit) {\n  if (text.length <= limit) return [text];\n  const chunks = [];\n  let remaining = text;\n  while (remaining.length > limit) {\n    const head = remaining.slice(0, limit);\n    let cut = -1;\n    for (const sep of ['\\n\\n', '\\n', '. ', '! ', '? ', ' ']) {\n      const idx = head.lastIndexOf(sep);\n      if (idx > Math.floor(limit / 2)) {\n        cut = idx + sep.length;\n        break;\n      }\n    }\n    if (cut <= 0) {\n      cut = limit;\n      const cc = remaining.charCodeAt(cut - 1);\n      if (cc >= 0xd800 && cc <= 0xdbff) cut -= 1; // do not split a surrogate pair (emoji)\n    }\n    chunks.push(remaining.slice(0, cut).trim());\n    remaining = remaining.slice(cut).trim();\n  }\n  if (remaining.length > 0) chunks.push(remaining);\n  return chunks;\n}\n\nconst chunks = splitText(content, LIMIT);\nreturn chunks.map((text) => ({ json: { text, chatId } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1944,
+        0
+      ],
+      "id": "6b719af5-702d-422a-8141-90e354368442",
+      "name": "Split message"
     }
   ],
   "pinData": {},
@@ -1049,5 +1106,5 @@
     "callerPolicy": "workflowsFromSameOwner"
   },
   "tags": [],
-  "versionId": "4fc2160a-9de9-4307-8c54-cf249cc264ab"
+  "versionId": "dda83e13-1e70-4e94-b3b3-40de79886680"
 }
