@@ -84,8 +84,9 @@ flowchart TD
     NX -->|yes| NY[Retry (max 2×)<br/>Attempt count → Attempt limit]
     NY -.->|retry| M
     NY -->|still empty| NZ[Fallback notice<br/>Telegram warning]
-    O --> P[Send Telegram Message<br/>reply to user]
-    P --> Q[Update Document<br/>append Aura response to Live Diary]
+    O --> SP[Prepare message → Split message<br/>≤4000 chars per chunk]
+    SP --> P[Send Telegram Message<br/>one message per chunk]
+    O --> Q[Update Document<br/>append Aura response to Live Diary]
     Q --> R[Update Row in Sheet<br/>last active timestamp]
 ```
 
@@ -117,6 +118,22 @@ The validation expression:
 (($json.choices?.[0]?.message?.content ?? '').toString().trim())
 ```
 
+### Long-message splitting (Telegram 4096-char limit)
+
+Telegram `sendMessage` accepts at most **4,096 characters**. Longer replies used to be rejected with
+`Bad Request: message is too long` — and because the send node runs with
+`onError: continueRegularOutput`, the failure was silently swallowed: the run reported success and
+no reply arrived.
+
+Both the chat and the proactive workflow now route the outgoing text through two nodes:
+
+- **`Prepare message`** — assembles `content` + `chatId` (chat: from the `AI Agent` / `Telegram Trigger`; proactive: sanitized text + configured chat id)
+- **`Split message`** — splits into ≤4,000-char chunks, preferring paragraph → line → sentence → word boundaries; a hard cut never splits an emoji surrogate pair. One chunk = one item.
+
+Each chunk is sent as its own Telegram message; short replies stay a single message. In the chat
+workflow this reply branch runs alongside the diary branch, so the document nodes still process a
+single item.
+
 ---
 
 ## Workflow 2: aura-proactive (Daily Check-in)
@@ -139,7 +156,8 @@ flowchart TD
     P --> Q[Code<br/>Build context from the last<br/>Weekly Summary block]
     Q --> F
     F --> G[Google Docs<br/>append nudge to Live Diary]
-    G --> H[Telegram<br/>send plain-text message]
+    G --> SP[Prepare message → Split message<br/>≤4000 chars per chunk]
+    SP --> H[Telegram<br/>send plain-text message<br/>one message per chunk]
 ```
 
 ### Key details
@@ -290,7 +308,7 @@ Factors that increase cost:
 
 ## Error Handling & Resilience
 
-- **Telegram send failures:** The `Send a text message` nodes have `onError: continueRegularOutput` — if a message fails to send (e.g., user blocked the bot), the workflow continues without breaking.
+- **Telegram send failures:** The chat `Send a text message1` node has `onError: continueRegularOutput` — a failed send does not break the workflow. Replies are pre-split into ≤4,000-char chunks, so the send cannot hit Telegram's 4,096-char limit (previously a silent failure mode).
 - **Retry on fail:** Critical nodes have `retryOnFail: true` enabled.
 - **Empty model responses:** The chat workflow validates every reply (`Empty response check`). On an empty response it retries up to 2 more times (`Attempt count` → `Attempt limit`), then sends a Telegram fallback notice instead of failing silently.
 - **Google Docs "Copy history" node:** Uses `onError: continueRegularOutput` to prevent the weekly maintenance from failing if the copy step encounters an issue.

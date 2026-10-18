@@ -2,6 +2,35 @@
 
 All notable changes to the Aura workflow collection are documented here.
 
+## 2026-10-18 — Long Telegram replies are now split into chunks (chat + proactive)
+
+### Fixed
+
+- **Chat and proactive replies above Telegram's hard limit** (4,096 chars per `sendMessage`) were rejected with `Bad Request: message is too long`. The chat send runs with `onError: continueRegularOutput`, so the failure was swallowed — the run reported success and the reply silently never arrived (the diary append downstream still ran).
+- **Proactive export data loss (since 2026-10-14)**: the published `aura-proactive.json` had lost its `ai_languageModel` connection (Gemini Chat Model → AI Agent) — the 2026-10-14 rename pass dropped non-`main` connection types. Restored; the export pipeline now preserves every connection type.
+
+### Added
+
+- **`Prepare message`** (Set) → **`Split message`** (Code) in both workflows. The splitter breaks the outgoing text into ≤4,000-char chunks, preferring paragraph → line → sentence → word boundaries; a hard cut never splits an emoji surrogate pair. One chunk = one Telegram message; short replies stay a single message.
+
+### Changed
+
+- **Chat `Send a text message1`**: takes `text`/`chatId` from the splitter; `retryOnFail` removed (retrying a Telegram send risks duplicate messages). `Cache log` now fans out: the reply branch (`Prepare message → Split message → Send`, terminal) runs alongside the diary branch (`Update a document1 → Update row in sheet`), so the document nodes still process a single item.
+- **Proactive `Send a text message`**: takes `text`/`chatId` from the splitter; the markdown-strip expression moved verbatim into `Prepare message`.
+
+### Why
+
+- 2026-10-18 chat run: the model returned a 5,557-char reply; Telegram rejected it and the silent failure meant no reply and no alert. Recent delivered replies measured 1,054–3,737 chars — the failure mode appears once replies cross 4,096.
+
+### Verified
+
+- Splitter unit test (exact deployed code): oversized paragraphs, no-separator hard cut, exact-limit and limit+1 inputs, emoji at the cut boundary.
+- End-to-end on a temporary workflow (1-minute trigger, deleted afterwards): 14,389 chars → 4 chunks (3,593–3,598 chars), 4 Telegram messages delivered, message IDs ascending.
+
+### Repo hygiene
+
+- `aura-chat.json` and `aura-proactive.json` regenerated from the live instance (valid strict JSON, zero forbidden substrings, zero Czech diacritics). `aura-weekly-maintenance.json` re-verified unchanged against a fresh live dump.
+
 ## 2026-10-16 — Proactive check-in: profile node credentials + first verified run
 
 ### Fixed

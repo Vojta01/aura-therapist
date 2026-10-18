@@ -234,6 +234,7 @@ The chat workflow handles multiple input types:
 - **Voice messages** → Downloaded via Telegram API → transcribed via Gemini → merged as text
 - **Text** → Directly merged with diary and profile context
 - **Resilience** — If the model returns an empty response, the workflow retries the call (up to 3 attempts total) and sends a Telegram fallback notice if it still fails
+- **Long replies** — replies above Telegram's 4,096-character limit are split into multiple messages automatically (split on paragraph and sentence boundaries; an emoji is never split across messages)
 
 ### Context Window
 
